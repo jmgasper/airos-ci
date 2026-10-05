@@ -108,6 +108,9 @@ fi
 	[[ -z $(ls "$WORK/demos") ]] || echo "AIROS_CI_DEMOS = $WORK/demos ;"
 	[[ -z $(ls "$WORK/firmware") ]] || echo "AIROS_CI_FIRMWARE = $WORK/firmware ;"
 	[[ -z $(ls "$WORK/add-ons") ]] || echo "AIROS_CI_ADDONS = $WORK/add-ons ;"
+	# arm64: FluidLite for the MIDI kit (deps/recipes/fluidlite.sh)
+	deps=$AIROS_ROOT/deps/$ARCH/boot/system
+	[[ $ARCH != arm64 || ! -f $deps/develop/lib/libfluidlite.a ]] || echo "AIROS_CI_FLUIDLITE = $deps ;"
 	[[ $TARGET != rpi4 ]] || echo "HAIKU_RPI_FIRMWARE_DIR = $rpi_firmware ;"
 	echo "include $HAIKU_SOURCE/tools/airos/ci/UserBuildConfig ;"
 } > UserBuildConfig

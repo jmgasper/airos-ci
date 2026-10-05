@@ -44,6 +44,15 @@
     "upstream": "https://github.com/FFmpeg/FFmpeg.git",
     "url": "https://github.com/jmgasper/ffmpeg.git"
   },
+  "fluidlite": {
+    "base": "e64b4b3161cab212fffe7d1d3fb1c05750c363cc",
+    "base_commit": "e64b4b3161cab212fffe7d1d3fb1c05750c363cc",
+    "branch": "airos-e64b4b3",
+    "commit": "e64b4b3161cab212fffe7d1d3fb1c05750c363cc",
+    "repo": "FluidLite",
+    "upstream": "https://github.com/divideconcept/FluidLite.git",
+    "url": "https://github.com/jmgasper/FluidLite.git"
+  },
   "fontconfig": {
     "base": null,
     "base_commit": null,

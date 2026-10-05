@@ -31,7 +31,7 @@ export AIROS_ARCH=$ARCH
 . "$AIROS_CI/lib/fork.sh"
 
 if [[ $ARCH == arm64 ]]; then
-	ORDER=(openssl nghttp2 curl sqlite taglib pcre2 scintilla lexilla rock5_ffmpeg wpa_supplicant)
+	ORDER=(openssl nghttp2 curl sqlite taglib pcre2 scintilla lexilla rock5_ffmpeg wpa_supplicant fluidlite)
 else
 	ORDER=(haikuports)
 fi

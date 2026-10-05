@@ -737,6 +737,17 @@
       "branch": "airos-22.0.5-hgl",
       "origin": "Mesa 22.0.5 (mesa-22.0.5.tar.xz) with HaikuPorts' six Haiku patches (sys-libs/mesa/patches/mesa-22.0.5.patchset) and haiku docs/x399-workstation/patches/mesa-hgl/0001-0014 (git am), pushed from the X399 build tree",
       "used_by": "x86_64: the Zink renderer add-on of Haiku's OpenGL kit (BGLView programs on Vulkan)"
+    },
+    {
+      "name": "fluidlite",
+      "repo": "FluidLite",
+      "wave": 5,
+      "create": "fork",
+      "github": "divideconcept/FluidLite",
+      "base": "e64b4b3161cab212fffe7d1d3fb1c05750c363cc",
+      "branch": "airos-e64b4b3",
+      "patches": [],
+      "used_by": "arm64 images: the General MIDI synthesizer of Haiku's MIDI kit (deps/recipes/fluidlite.sh, the fluidlite build feature), as tools/rock5-itx/build-fluidlite-arm64.sh builds it"
     }
   ]
 }
