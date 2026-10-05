@@ -182,7 +182,11 @@ build_recipe() {
 	mkdir -p "$STAGE"
 	( cd "$SRC" && build ) > "$dir/build.log" 2>&1 || { tail -40 "$dir/build.log"; die "$NAME failed (log: $dir/build.log)"; }
 	normalize_stage
-	cp -a "$STAGE$PREFIX/." "$DEPS/"
+	# Package contents can be read-only (HaikuPorts): keep both trees writable
+	# so the next build can replace them.
+	chmod -R u+rwX,g+rwX "$STAGE" "$DEPS" 2>/dev/null || true
+	cp -a --no-preserve=mode "$STAGE$PREFIX/." "$DEPS/"
+	chmod -R u+rwX,g+rwX "$DEPS" 2>/dev/null || true
 	[[ ${NO_PACKAGE:-0} == 1 ]] || make_package
 	echo "$stamp" > "$dir/stamp"
 	unset -f build fetch_source
