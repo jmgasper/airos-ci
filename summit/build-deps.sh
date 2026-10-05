@@ -73,12 +73,14 @@ EOF
 
 # A git checkout gives the files one time in no particular order, and make
 # would regenerate aclocal.m4, configure and Makefile.in with the host's
-# autotools: make the generated files the newer ones.
+# autotools. Put the tree a few minutes in the past and the generated files
+# after their sources (still in the past: configure checks the clock).
 autotools_times() {
 	local now
 	now=$(date +%s)
-	find . -name aclocal.m4 -exec touch -d "@$now" {} +
-	find . \( -name configure -o -name Makefile.in -o -name config.h.in \) -exec touch -d "@$((now + 1))" {} +
+	find . -exec touch -h -d "@$((now - 300))" {} +
+	find . -name aclocal.m4 -exec touch -d "@$((now - 200))" {} +
+	find . \( -name configure -o -name Makefile.in -o -name config.h.in \) -exec touch -d "@$((now - 100))" {} +
 }
 ac() { # ac [configure arguments]: autotools build in _b, installed into the prefix
 	autotools_times
@@ -90,12 +92,14 @@ ac() { # ac [configure arguments]: autotools build in _b, installed into the pre
 	make -j"$JOBS"
 	make install
 }
+# No CMAKE_POSITION_INDEPENDENT_CODE: it compiles executables with -fPIE, and
+# Haiku links executables as shared objects, which x86_64 ld then refuses.
+# Shared libraries get -fPIC anyway.
 cm() { # cm [cmake arguments]; CMake 4 refuses projects that ask for < 3.5 (WOFF2)
 	rm -rf _b
 	cmake -S . -B _b -G Ninja -DCMAKE_TOOLCHAIN_FILE="$TC" -DCMAKE_BUILD_TYPE=Release \
 		-DCMAKE_POLICY_VERSION_MINIMUM=3.5 \
-		-DCMAKE_INSTALL_PREFIX="$P" -DCMAKE_INSTALL_LIBDIR=lib -DBUILD_SHARED_LIBS=ON \
-		-DCMAKE_POSITION_INDEPENDENT_CODE=ON "$@"
+		-DCMAKE_INSTALL_PREFIX="$P" -DCMAKE_INSTALL_LIBDIR=lib -DBUILD_SHARED_LIBS=ON "$@"
 	ninja -C _b -j"$JOBS"
 	ninja -C _b install
 }

@@ -99,7 +99,8 @@ EOF
 		GIT_INDEX_FILE=$index git -C "$SRC" apply --cached --whitespace=nowarn "$patch" \
 			|| die "$(basename "$patch") does not apply to WebKit ${base:0:12}"
 	done
-	tree=$(GIT_INDEX_FILE=$index git -C "$SRC" write-tree)
+	# --missing-ok: a partial clone would otherwise fetch every blob it lacks, one by one
+	tree=$(GIT_INDEX_FILE=$index git -C "$SRC" write-tree --missing-ok)
 	rm -f "$index"
 	patched=$(GIT_AUTHOR_NAME="air/OS CI" GIT_AUTHOR_EMAIL=ci@airos.invalid \
 		GIT_COMMITTER_NAME="air/OS CI" GIT_COMMITTER_EMAIL=ci@airos.invalid \
@@ -137,8 +138,9 @@ cmake -S "$SRC" -B "$B" -G Ninja -C "$SUMMIT_DIR/engine/arm64/rpi4-gl/init-cache
 grep -E "^-- (Enabled|  ENABLE_WEB_RTC|  USE_SKIA|  ENABLE_WEBGL )" "$B/configure.log" | head -10 || true
 
 note "build ($JOBS jobs)"
+# One engine build at a time on the host: each takes about all of its memory.
 start=$SECONDS
-if ! nice -n 10 ninja -C "$B" -j"$JOBS" > "$B/build.log" 2>&1; then
+if ! flock "$AIROS_LOCKS/webkit-build.lock" nice -n 10 ninja -C "$B" -j"$JOBS" > "$B/build.log" 2>&1; then
 	grep -m 5 -B 2 -A 12 -E "error:|FAILED:" "$B/build.log" | head -80
 	die "WebKit build failed (log: $B/build.log)"
 fi
