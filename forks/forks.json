@@ -1,0 +1,216 @@
+{
+  "comment": "Third-party code air/OS builds or ships. Each component lives in a repository under jmgasper (a GitHub fork, or an import when upstream is not on GitHub) with the air/OS changes committed on `branch` on top of `base`. forks/make-forks.py creates them; forks.lock.json records the commit every build uses. Patch sources are pinned to the commits in `sources`.",
+  "sources": {
+    "haiku": {
+      "repo": "jmgasper/haiku",
+      "ref": "9dc439ceeb30cc97c63855f4c67be9d207875b17"
+    },
+    "summit": {
+      "repo": "jmgasper/summit",
+      "ref": "ca44cf9"
+    },
+    "burrow": {
+      "repo": "jmgasper/burrow",
+      "ref": "a3fafd3"
+    },
+    "haikuports": {
+      "repo": "haikuports/haikuports",
+      "ref": "83497049f196ec0c1b4c17a92f83dac839bc2295"
+    }
+  },
+  "components": [
+    {
+      "name": "openssl",
+      "wave": 1,
+      "create": "fork",
+      "github": "openssl/openssl",
+      "base": "openssl-3.3.2",
+      "branch": "airos-3.3.2",
+      "patches": [
+        {
+          "from": "summit:engine/arm64/patches/deps-haiku-arm64.patch",
+          "only": "openssl-3.3.2/",
+          "message": "Haiku arm64: armcap without SIGILL probing (SIGBUS fix) and os-dep/haiku.h"
+        },
+        {
+          "add": "Configurations/60-haiku-aarch64.conf",
+          "heredoc": "summit:engine/arm64/build-deps.sh",
+          "message": "Configurations: haiku-aarch64 target"
+        }
+      ],
+      "used_by": "arm64: Summit engine, curl, Burrow (static), Natter"
+    },
+    {
+      "name": "curl",
+      "wave": 1,
+      "create": "fork",
+      "github": "curl/curl",
+      "base": "curl-8_10_1",
+      "branch": "airos-8.10.1",
+      "patches": [
+        {
+          "from": "summit:engine/arm64/patches/deps-haiku-arm64.patch",
+          "only": "curl-8.10.1/",
+          "message": "cf-socket: no SOCK_NONBLOCK on Haiku"
+        }
+      ],
+      "used_by": "arm64: Summit engine, Amp, Natter, image libcurl with TLS"
+    },
+    {
+      "name": "nghttp2",
+      "wave": 1,
+      "create": "fork",
+      "github": "nghttp2/nghttp2",
+      "base": "v1.64.0",
+      "branch": "airos-1.64.0",
+      "patches": [],
+      "used_by": "arm64: curl (HTTP/2)"
+    },
+    {
+      "name": "sqlite",
+      "wave": 1,
+      "create": "fork",
+      "github": "sqlite/sqlite",
+      "base": "version-3.46.1",
+      "branch": "airos-3.46.1",
+      "patches": [
+        {
+          "tarball": "https://www.sqlite.org/2024/sqlite-autoconf-3460100.tar.gz",
+          "sha256": "67d3fe6d268e6eaddcae3727fce58fcc8e9c53869bdd07a0c61e38ddf2965071",
+          "into": "autoconf",
+          "message": "Add the 3.46.1 autoconf amalgamation the build uses (sqlite3.c, sqlite3.h, configure)"
+        }
+      ],
+      "used_by": "arm64: Amp, Summit engine"
+    },
+    {
+      "name": "taglib",
+      "wave": 1,
+      "create": "fork",
+      "github": "taglib/taglib",
+      "base": "v2.0.2",
+      "branch": "airos-2.0.2",
+      "patches": [],
+      "submodules": {
+        "3rdparty/utfcpp": "utfcpp"
+      },
+      "used_by": "arm64: Amp"
+    },
+    {
+      "name": "utfcpp",
+      "wave": 1,
+      "create": "fork",
+      "github": "nemtrif/utfcpp",
+      "base": {
+        "submodule_of": "taglib",
+        "path": "3rdparty/utfcpp"
+      },
+      "branch": "airos-4.0.5",
+      "patches": [],
+      "used_by": "TagLib (header-only)"
+    },
+    {
+      "name": "pcre2",
+      "wave": 1,
+      "create": "fork",
+      "github": "PCRE2Project/pcre2",
+      "base": "pcre2-10.45",
+      "branch": "airos-10.45",
+      "patches": [],
+      "submodules": {
+        "deps/sljit": "sljit"
+      },
+      "used_by": "arm64: Kiri"
+    },
+    {
+      "name": "sljit",
+      "wave": 1,
+      "create": "fork",
+      "github": "zherczeg/sljit",
+      "base": {
+        "submodule_of": "pcre2",
+        "path": "deps/sljit"
+      },
+      "branch": "airos-pcre2-10.45",
+      "patches": [],
+      "used_by": "PCRE2 JIT"
+    },
+    {
+      "name": "lexilla",
+      "wave": 1,
+      "create": "fork",
+      "github": "ScintillaOrg/lexilla",
+      "base": "rel-5-4-6",
+      "branch": "airos-5.4.6",
+      "patches": [],
+      "used_by": "arm64: Kiri"
+    },
+    {
+      "name": "scintilla",
+      "wave": 1,
+      "create": "import",
+      "description": "Scintilla 5.3.4 (from the release tarball; upstream is Mercurial) with the HaikuPorts Haiku port",
+      "branch": "airos-5.3.4",
+      "patches": [
+        {
+          "tarball": "https://prdownloads.sf.net/scintilla/scintilla534.tgz",
+          "sha256": "3f01b1aef2b7e98f628af2cff965876f5d15ee2801d9df96dd3aced8f087cb46",
+          "strip": 1,
+          "into": ".",
+          "message": "Import Scintilla 5.3.4 (scintilla534.tgz)"
+        },
+        {
+          "from": "haikuports:x11-libs/scintilla/patches/scintilla-5.3.4.patchset"
+        },
+        {
+          "tarball": "https://prdownloads.sf.net/scintilla/scintillahaiku534.tgz",
+          "sha256": "9a4d46ebca064bc4484f1bc33e765774b2af669d61d4a26ddd4aa8cda1536c27",
+          "pick": "haiku",
+          "into": "haiku",
+          "message": "Add the Haiku backend (scintillahaiku534.tgz), as the HaikuPorts recipe does"
+        }
+      ],
+      "used_by": "arm64: Kiri"
+    },
+    {
+      "name": "ffmpeg",
+      "wave": 1,
+      "create": "fork",
+      "github": "FFmpeg/FFmpeg",
+      "base": "n6.1.6",
+      "branch": "airos-6.1.6",
+      "patches": [
+        {
+          "from": "haiku:tools/rock5-itx/ffmpeg-6.1.6.patchset"
+        }
+      ],
+      "used_by": "arm64: rock5_ffmpeg (images, airTime); MPP decoder"
+    },
+    {
+      "name": "openvpn",
+      "wave": 1,
+      "create": "fork",
+      "github": "OpenVPN/openvpn",
+      "base": "v2.6.13",
+      "branch": "burrow-2.6.13",
+      "patches": [
+        {
+          "from": "burrow:openvpn/patches/0001-haikuports-openvpn-2.6.13.patchset"
+        },
+        {
+          "from": "burrow:openvpn/patches/0002-aws-client-vpn.patch",
+          "message": "AWS Client VPN support"
+        },
+        {
+          "from": "burrow:openvpn/patches/0003-burrow-parenthesise-aws-sizes.patch",
+          "message": "Burrow: parenthesise AWS sizes"
+        },
+        {
+          "from": "burrow:openvpn/patches/0004-burrow-haiku-tunnel-routes.patch",
+          "message": "Burrow: Haiku tunnel routes"
+        }
+      ],
+      "used_by": "Burrow (burrow-openvpn, both architectures)"
+    }
+  ]
+}

@@ -101,7 +101,7 @@ build_haiku() {
 	jam -q -j"$JOBS" haiku.hpkg haiku_devel.hpkg \
 		'<build>rc' '<build>xres' '<build>mimeset' '<build>resattr' '<build>rm_attrs' \
 		'<build>package' '<build>settype' '<build>setversion' '<build>copyattr' \
-		'<build>catattr' '<mimedb>mime_db'
+		'<build>catattr' '<build>package_repo' '<mimedb>mime_db'
 }
 
 assemble_sdk() {

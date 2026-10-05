@@ -1,0 +1,110 @@
+{
+  "curl": {
+    "base": "curl-8_10_1",
+    "base_commit": "7eb8c048470ed2cc14dca75be9c1cdae7ac8498b",
+    "branch": "airos-8.10.1",
+    "commit": "4c387b7f3156d85e8f3803b212b713a792ab6c9d",
+    "repo": "curl",
+    "upstream": "https://github.com/curl/curl.git",
+    "url": "https://github.com/jmgasper/curl.git"
+  },
+  "ffmpeg": {
+    "base": "n6.1.6",
+    "base_commit": "f1e3a2bf7a2f2cde936d1ed97f09a26853d20125",
+    "branch": "airos-6.1.6",
+    "commit": "28eb846d5b41a4397e22a07d2e0f73941b1c6a20",
+    "repo": "ffmpeg",
+    "upstream": "https://github.com/FFmpeg/FFmpeg.git",
+    "url": "https://github.com/jmgasper/ffmpeg.git"
+  },
+  "lexilla": {
+    "base": "rel-5-4-6",
+    "base_commit": "1ebf450688655968d0251ff9774a7e3c3b53a34e",
+    "branch": "airos-5.4.6",
+    "commit": "1ebf450688655968d0251ff9774a7e3c3b53a34e",
+    "repo": "lexilla",
+    "upstream": "https://github.com/ScintillaOrg/lexilla.git",
+    "url": "https://github.com/jmgasper/lexilla.git"
+  },
+  "nghttp2": {
+    "base": "v1.64.0",
+    "base_commit": "526ff38e0249acbcc4d0e8958c12cdeae9960cfe",
+    "branch": "airos-1.64.0",
+    "commit": "526ff38e0249acbcc4d0e8958c12cdeae9960cfe",
+    "repo": "nghttp2",
+    "upstream": "https://github.com/nghttp2/nghttp2.git",
+    "url": "https://github.com/jmgasper/nghttp2.git"
+  },
+  "openssl": {
+    "base": "openssl-3.3.2",
+    "base_commit": "fb7fab9fa6f4869eaa8fbb97e0d593159f03ffe4",
+    "branch": "airos-3.3.2",
+    "commit": "6806db538d10e4f9609571ca25b985d2632848e2",
+    "repo": "openssl",
+    "upstream": "https://github.com/openssl/openssl.git",
+    "url": "https://github.com/jmgasper/openssl.git"
+  },
+  "openvpn": {
+    "base": "v2.6.13",
+    "base_commit": "5662b3a8eb9e5744602a6da8cf3847455a0ba74f",
+    "branch": "burrow-2.6.13",
+    "commit": "3f8bc49741508ef5439cce3756564fa579870cdc",
+    "repo": "openvpn",
+    "upstream": "https://github.com/OpenVPN/openvpn.git",
+    "url": "https://github.com/jmgasper/openvpn.git"
+  },
+  "pcre2": {
+    "base": "pcre2-10.45",
+    "base_commit": "2dce7761b1831fd3f82a9c2bd5476259d945da4d",
+    "branch": "airos-10.45",
+    "commit": "ee4f03f29d489fcbbd7c0043d89ce00c09a6f9e5",
+    "repo": "pcre2",
+    "upstream": "https://github.com/PCRE2Project/pcre2.git",
+    "url": "https://github.com/jmgasper/pcre2.git"
+  },
+  "scintilla": {
+    "base": null,
+    "base_commit": null,
+    "branch": "airos-5.3.4",
+    "commit": "5a0c5c908662d321c5855c87b3cdc12e40a3527f",
+    "repo": "scintilla",
+    "upstream": null,
+    "url": "https://github.com/jmgasper/scintilla.git"
+  },
+  "sljit": {
+    "base": "e51eabbfb8eabc6526f56e4e88b29fb10d1ee048",
+    "base_commit": "e51eabbfb8eabc6526f56e4e88b29fb10d1ee048",
+    "branch": "airos-pcre2-10.45",
+    "commit": "e51eabbfb8eabc6526f56e4e88b29fb10d1ee048",
+    "repo": "sljit",
+    "upstream": "https://github.com/zherczeg/sljit.git",
+    "url": "https://github.com/jmgasper/sljit.git"
+  },
+  "sqlite": {
+    "base": "version-3.46.1",
+    "base_commit": "f3d536d37825302e31ed0eddd811c689f38f85a3",
+    "branch": "airos-3.46.1",
+    "commit": "57d29d8aefd68f7b137e6ff14020b4734491e659",
+    "repo": "sqlite",
+    "upstream": "https://github.com/sqlite/sqlite.git",
+    "url": "https://github.com/jmgasper/sqlite.git"
+  },
+  "taglib": {
+    "base": "v2.0.2",
+    "base_commit": "e3de03501ff66221d1f1f971022b248d5b38ba06",
+    "branch": "airos-2.0.2",
+    "commit": "a996728f30fe03c1b21096f4b25e2b58b2e2d350",
+    "repo": "taglib",
+    "upstream": "https://github.com/taglib/taglib.git",
+    "url": "https://github.com/jmgasper/taglib.git"
+  },
+  "utfcpp": {
+    "base": "df857efc5bbc2aa84012d865f7d7e9cccdc08562",
+    "base_commit": "df857efc5bbc2aa84012d865f7d7e9cccdc08562",
+    "branch": "airos-4.0.5",
+    "commit": "df857efc5bbc2aa84012d865f7d7e9cccdc08562",
+    "repo": "utfcpp",
+    "upstream": "https://github.com/nemtrif/utfcpp.git",
+    "url": "https://github.com/jmgasper/utfcpp.git"
+  }
+}
