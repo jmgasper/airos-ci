@@ -2,6 +2,8 @@
 """Resolve and fetch HaikuPorts packages for an air/OS architecture.
 
     haikuports.py fetch ARCH REQ...            download what REQ needs; print the files
+    haikuports.py fetch --no-deps ARCH PKG...  download exactly these packages (images
+                                               add their dependencies themselves)
     haikuports.py stage ARCH PREFIX REQ...     same, and extract them into PREFIX
                                                (a boot/system tree)
 
@@ -137,7 +139,7 @@ def installed_provides(arch):
     return provides
 
 
-def resolve(arch, requirements):
+def resolve(arch, requirements, deps=True):
     pkgs = [p for p in repository(arch) if p.get("architecture") in (arch, "any")
             and not p["name"].endswith(("_debuginfo", "_source"))]
     base = installed_provides(arch)
@@ -159,15 +161,16 @@ def resolve(arch, requirements):
         if best["name"] in chosen:
             continue
         chosen[best["name"]] = best
-        todo += best["requires"]
+        if deps:
+            todo += best["requires"]
     return list(chosen.values())
 
 
-def fetch(arch, requirements):
+def fetch(arch, requirements, deps=True):
     d = os.path.join(CACHE, "haikuports", arch, "packages")
     os.makedirs(d, exist_ok=True)
     files = []
-    for p in sorted(resolve(arch, requirements), key=lambda p: p["name"]):
+    for p in sorted(resolve(arch, requirements, deps), key=lambda p: p["name"]):
         fname = f"{p['name']}-{p['version']}-{p['architecture']}.hpkg"
         path = os.path.join(d, fname)
         if not os.path.exists(path):
@@ -178,14 +181,19 @@ def fetch(arch, requirements):
 
 
 def main():
-    if len(sys.argv) < 3 or sys.argv[1] not in ("fetch", "stage"):
+    args = sys.argv[1:]
+    deps = True
+    if len(args) > 1 and args[1] == "--no-deps":
+        deps = False
+        del args[1]
+    if len(args) < 2 or args[0] not in ("fetch", "stage"):
         sys.exit(__doc__)
-    cmd, arch = sys.argv[1], sys.argv[2]
+    cmd, arch = args[0], args[1]
     if cmd == "stage":
-        prefix, reqs = sys.argv[3], sys.argv[4:]
+        prefix, reqs = args[2], args[3:]
     else:
-        prefix, reqs = None, sys.argv[3:]
-    files = fetch(arch, reqs)
+        prefix, reqs = None, args[2:]
+    files = fetch(arch, reqs, deps)
     record = [{"file": os.path.basename(f), "sha256": hashlib.sha256(open(f, "rb").read()).hexdigest()}
               for f in files]
     if prefix:

@@ -43,6 +43,21 @@ update_sources() {
 	fi
 	# Only one job fetches at a time; worktrees of other arches are untouched.
 	with_lock haiku-clone git -C "$CLONE" fetch -q --tags --prune --force origin
+	if [[ $REF =~ ^[0-9a-f]{40}$ ]]; then
+		# An exact commit (CI passes the pushed one): fetch it if needed.
+		git -C "$CLONE" cat-file -e "$REF^{commit}" 2>/dev/null \
+			|| with_lock haiku-clone git -C "$CLONE" fetch -q origin "$REF"
+	elif [[ $REF == origin/* ]]; then
+		# A branch: GitHub can serve a fetch from a replica that has not seen
+		# the latest push yet, so insist on what ls-remote reports.
+		local want attempt
+		want=$(git -C "$CLONE" ls-remote origin "refs/heads/${REF#origin/}" | cut -f1)
+		for attempt in 1 2 3 4 5 6; do
+			[[ -z $want || $(git -C "$CLONE" rev-parse "$REF") == "$want" ]] && break
+			sleep $((attempt * 5))
+			with_lock haiku-clone git -C "$CLONE" fetch -q --force origin
+		done
+	fi
 	SHA=$(git -C "$CLONE" rev-parse --verify "$REF^{commit}")
 	if [[ ! -d $WT ]]; then
 		mkdir -p "$(dirname "$WT")"

@@ -231,6 +231,74 @@
         }
       ],
       "used_by": "arm64: rock5_ffmpeg (RK3588 VPU decoding through the MPP decoder add-on)"
+    },
+    {
+      "name": "rpi-firmware",
+      "repo": "firmware",
+      "wave": 2,
+      "create": "fork",
+      "github": "raspberrypi/firmware",
+      "base": "1.20260915",
+      "branch": "airos-1.20260915",
+      "patches": [],
+      "used_by": "Pi 4 image boot partition: start4.elf, fixup4.dat, device trees, overlays (tools/rpi4/fetch-firmware.sh pin)"
+    },
+    {
+      "name": "rpi-firmware-nonfree",
+      "repo": "firmware-nonfree",
+      "wave": 2,
+      "create": "fork",
+      "github": "RPi-Distro/firmware-nonfree",
+      "base": "c91cd2804cf7463aab913e7247c176049f16bbd6",
+      "branch": "airos-bookworm",
+      "patches": [],
+      "used_by": "Pi 4 image: CYW43455 Wi-Fi firmware (brcmfmac43455-sdio.*), from the bookworm branch"
+    },
+    {
+      "name": "rpi-bluez-firmware",
+      "repo": "bluez-firmware",
+      "wave": 2,
+      "create": "fork",
+      "github": "RPi-Distro/bluez-firmware",
+      "base": "adb4d55c8f193ff16ece74dd72fd6e8801632103",
+      "branch": "airos-bookworm",
+      "patches": [],
+      "used_by": "Pi 4 image: BCM4345C0.hcd Bluetooth patch, from the bookworm branch"
+    },
+    {
+      "name": "airos-firmware",
+      "wave": 2,
+      "create": "import",
+      "description": "Firmware air/OS images ship, from linux-firmware at pinned commits (Bluetooth for Intel/Realtek/MediaTek, MediaTek MT7921/MT7922 Wi-Fi, Mali CSF GPU), with their licences",
+      "branch": "airos",
+      "patches": [
+        {
+          "git": "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git",
+          "commit": "3b128b6069267b60a46a4074c383183177ee6e6d",
+          "paths": [
+            "/intel/ibt-*",
+            "/rtl_bt/*",
+            "/mediatek/BT_RAM_CODE_MT79*",
+            "/mediatek/WIFI_MT79*",
+            "/mediatek/WIFI_RAM_CODE_MT79*",
+            "/LICENCE.ibt_firmware",
+            "/LICENCE.rtlwifi_firmware.txt",
+            "/LICENCE.mediatek",
+            "/WHENCE"
+          ],
+          "message": "linux-firmware 20240318 (3b128b60): Intel, Realtek and MediaTek Bluetooth, MediaTek MT7921/MT7922 Wi-Fi\n\nThe same release as Ubuntu's linux-firmware 20240318.git3b128b60, which the\nworkstation-built firmware packages were made from."
+        },
+        {
+          "git": "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git",
+          "commit": "eeccccbe83daf22e1931e3557ba05b2c02427e4e",
+          "paths": [
+            "/arm/mali/arch10.8/*",
+            "/LICENCE.mali_csffw*"
+          ],
+          "message": "linux-firmware eeccccbe: Mali CSF GPU firmware (arch10.8, RK3588)"
+        }
+      ],
+      "used_by": "firmware packages and the Mali firmware in all images (deps/recipes/firmware.sh)"
     }
   ]
 }

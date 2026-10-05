@@ -188,6 +188,29 @@ def make(c, sources, workdir, lock, force):
             gh("repo", "create", full, "--public", "--description", c["description"])
         upstream = c.get("upstream")
 
+    # 1b. nothing to commit: point the branch at the pinned upstream commit
+    #     through the API, without cloning (raspberrypi/firmware is many GB).
+    if c["create"] == "fork" and not c.get("patches") and not c.get("submodules") \
+            and isinstance(c.get("base"), str):
+        base = c["base"]
+        if re.fullmatch(r"[0-9a-f]{40}", base):
+            commit_sha = base
+        else:
+            ref = json.loads(gh("api", f"repos/{c['github']}/git/refs/tags/{base}"))
+            commit_sha = ref["object"]["sha"]
+            if ref["object"]["type"] == "tag":
+                commit_sha = json.loads(gh("api", f"repos/{c['github']}/git/tags/{commit_sha}"))["object"]["sha"]
+        if gh("api", f"repos/{full}/branches/{branch}", "--jq", ".commit.sha", check=False) != commit_sha:
+            gh("api", "-X", "DELETE", f"repos/{full}/git/refs/heads/{branch}", check=False)
+            gh("api", "-X", "POST", f"repos/{full}/git/refs", "-f", f"ref=refs/heads/{branch}",
+               "-f", f"sha={commit_sha}")
+        lock[name] = {"repo": repo_name, "url": f"https://github.com/{full}.git", "branch": branch,
+                      "commit": commit_sha, "base": base, "base_commit": commit_sha,
+                      "upstream": f"https://github.com/{c['github']}.git"}
+        print(f"  {full} {branch} = {commit_sha[:12]} (no changes; branch made through the API)",
+              file=sys.stderr)
+        return
+
     # 2. the working clone: commits and trees on demand (tree:0), objects of
     #    the checked-out tree only.
     d = os.path.join(workdir, repo_name)
@@ -240,6 +263,35 @@ def make(c, sources, workdir, lock, force):
             path = fetch_tarball(p["tarball"], p["sha256"], cache)
             unpack_into(d, path, p.get("into", "."), p.get("strip", 0), p.get("pick"))
             commit(d, p["message"], f"{p['tarball']} (sha256 {p['sha256']})")
+        elif "git" in p:
+            # files from a pinned commit of another git repository (sparse,
+            # blobs only for the matching paths), at the same paths
+            with tempfile.TemporaryDirectory(dir=workdir) as tmp:
+                run(["git", "init", "-q", tmp])
+                run(["git", "-C", tmp, "remote", "add", "origin", p["git"]])
+                run(["git", "-C", tmp, "config", "core.sparseCheckout", "true"])
+                run(["git", "-C", tmp, "sparse-checkout", "set", "--no-cone", *p["paths"]])
+                run(["git", "-C", tmp, "fetch", "-q", "--depth", "1", "--filter=blob:none",
+                     "origin", p["commit"]])
+                run(["git", "-C", tmp, "checkout", "-q", "FETCH_HEAD"])
+                copied = 0
+                for dp, dns, fns in os.walk(tmp):
+                    dns[:] = [x for x in dns if x != ".git"]
+                    for fn in fns:
+                        src = os.path.join(dp, fn)
+                        rel = os.path.relpath(src, tmp)
+                        dst = os.path.join(d, p.get("into", "."), rel)
+                        os.makedirs(os.path.dirname(dst), exist_ok=True)
+                        if os.path.islink(src):
+                            if os.path.lexists(dst):
+                                os.remove(dst)
+                            os.symlink(os.readlink(src), dst)
+                        else:
+                            shutil.copy2(src, dst)
+                        copied += 1
+                if not copied:
+                    sys.exit(f"error: no files matched {p['paths']} in {p['git']}@{p['commit']}")
+            commit(d, p["message"], f"{p['git']} at {p['commit']}")
         elif "overlay" in p:
             # copy a directory tree from a pinned source repository into the fork
             src_name, path = p["overlay"].split(":", 1)

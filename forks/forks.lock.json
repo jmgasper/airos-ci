@@ -1,4 +1,13 @@
 {
+  "airos-firmware": {
+    "base": null,
+    "base_commit": null,
+    "branch": "airos",
+    "commit": "2061655316e854d47bd7a4fb85fbb70eb82de4d7",
+    "repo": "airos-firmware",
+    "upstream": null,
+    "url": "https://github.com/jmgasper/airos-firmware.git"
+  },
   "curl": {
     "base": "curl-8_10_1",
     "base_commit": "7eb8c048470ed2cc14dca75be9c1cdae7ac8498b",
@@ -70,6 +79,33 @@
     "repo": "pcre2",
     "upstream": "https://github.com/PCRE2Project/pcre2.git",
     "url": "https://github.com/jmgasper/pcre2.git"
+  },
+  "rpi-bluez-firmware": {
+    "base": "adb4d55c8f193ff16ece74dd72fd6e8801632103",
+    "base_commit": "adb4d55c8f193ff16ece74dd72fd6e8801632103",
+    "branch": "airos-bookworm",
+    "commit": "adb4d55c8f193ff16ece74dd72fd6e8801632103",
+    "repo": "bluez-firmware",
+    "upstream": "https://github.com/RPi-Distro/bluez-firmware.git",
+    "url": "https://github.com/jmgasper/bluez-firmware.git"
+  },
+  "rpi-firmware": {
+    "base": "1.20260915",
+    "base_commit": "6f0881cba8bea8ec24956a5718714730e9936ec5",
+    "branch": "airos-1.20260915",
+    "commit": "6f0881cba8bea8ec24956a5718714730e9936ec5",
+    "repo": "firmware",
+    "upstream": "https://github.com/raspberrypi/firmware.git",
+    "url": "https://github.com/jmgasper/firmware.git"
+  },
+  "rpi-firmware-nonfree": {
+    "base": "c91cd2804cf7463aab913e7247c176049f16bbd6",
+    "base_commit": "c91cd2804cf7463aab913e7247c176049f16bbd6",
+    "branch": "airos-bookworm",
+    "commit": "c91cd2804cf7463aab913e7247c176049f16bbd6",
+    "repo": "firmware-nonfree",
+    "upstream": "https://github.com/RPi-Distro/firmware-nonfree.git",
+    "url": "https://github.com/jmgasper/firmware-nonfree.git"
   },
   "scintilla": {
     "base": null,
