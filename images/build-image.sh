@@ -60,18 +60,22 @@ for app in "${IMAGE_APPS[@]}"; do
 	if [[ -n $file ]]; then cp "$file" "$WORK/packages/"; else missing+=("$app"); fi
 done
 # Libraries and system components CI builds (airos_*, rock5_ffmpeg,
-# wpa_supplicant, rock5_glinfo, ...) and architecture-neutral firmware.
+# wpa_supplicant, ...) and firmware: architecture-neutral packages, and on
+# arm64 HaikuPorts' Wi-Fi firmware recompressed with zlib
+# (deps/build-firmware.sh).
 for file in "$pool"/airos_*-"$ARCH".hpkg "$pool"/rock5_*-"$ARCH".hpkg \
-		"$pool"/wpa_supplicant-*-"$ARCH".hpkg "$any"/*.hpkg; do
+		"$pool"/wpa_supplicant-*-"$ARCH".hpkg "$pool"/*_wifi_firmwares-*-any.hpkg "$any"/*.hpkg; do
 	[[ -e $file ]] && cp "$file" "$WORK/packages/"
 done
 if [[ $ARCH == x86_64 ]]; then
 	# The applications' x86_64 requirements that the build system's HaikuPorts
 	# list lacks (the others come with AddHaikuImageSystemPackages), and what
 	# summit_webkit's private Mesa needs: LLVM 21 (llvmpipe) and the Vulkan
-	# loader (zink).
+	# loader (zink); and the Wi-Fi firmware Haiku's image leaves out (Intel
+	# cards such as the X399's AX210, Ralink, Realtek).
 	AIROS_CACHE=$AIROS_CACHE AIROS_SDK=$AIROS_SDK "$AIROS_CI/deps/haikuports.py" fetch --no-deps \
-		x86_64 taglib2 scintilla lexilla lzo lz4 llvm21_libs vulkan | xargs -r cp -t "$WORK/packages/"
+		x86_64 taglib2 scintilla lexilla lzo lz4 llvm21_libs vulkan \
+		intel_wifi_firmwares ralink_wifi_firmwares realtek_wifi_firmwares | xargs -r cp -t "$WORK/packages/"
 fi
 # GL stack, EGL vendor files, demos and firmware staged by the deps builds.
 gl=$AIROS_ROOT/image-inputs/$TARGET
