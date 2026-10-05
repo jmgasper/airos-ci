@@ -136,11 +136,19 @@ xz -T0 -6 -c "$BUILD/$IMAGE" > "$dest/$IMAGE.xz"
 ( cd "$dest" && sha256sum "$IMAGE.xz" > "$IMAGE.xz.sha256" )
 image_sha=$(sha256sum "$BUILD/$IMAGE" | cut -d' ' -f1)
 python3 - "$dest/manifest.json" "$TARGET" "$IMAGE" "$size" "$image_sha" "$HAIKU_REVISION" \
-	"$HAIKU_SHA" "$WORK/packages" <<'EOF'
-import hashlib, json, os, sys, datetime
-out, target, image, size, sha, rev, haiku_sha, pkgdir = sys.argv[1:9]
+	"$HAIKU_SHA" "$WORK/packages" "$gl" <<'EOF'
+import glob, hashlib, json, os, sys, datetime
+out, target, image, size, sha, rev, haiku_sha, pkgdir, inputs = sys.argv[1:10]
 pkgs = sorted(os.listdir(pkgdir))
+# What the files outside packages were built from (the *-sources.txt the deps
+# builds leave with them: GL stacks, NVIDIA, NVK, Zink).
+sources = {}
+for path in sorted(glob.glob(os.path.join(inputs, "*-sources.txt"))
+                   + glob.glob(os.path.join(inputs, "*", "*-sources.txt"))):
+    name = os.path.basename(path)[:-len("-sources.txt")]
+    sources[name] = dict(line.split(" ", 1) for line in open(path).read().splitlines() if " " in line)
 json.dump({
+    "inputs": sources,
     "target": target, "image": image, "image_bytes": int(size), "image_sha256": sha,
     "built": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
     "haiku": {"repository": "https://github.com/jmgasper/haiku", "revision": rev, "commit": haiku_sha},
