@@ -1,0 +1,98 @@
+# Reusable workflow: build an air/OS application for x86_64 and arm64 on the
+# self-hosted air/OS build server, and on the default branch publish the
+# packages (rolling "latest" release) and update the README's build links.
+#
+# Call it from an application repository:
+#
+#   on:
+#     push:
+#       branches: [main]
+#     workflow_dispatch:
+#   jobs:
+#     airos:
+#       uses: jmgasper/airos-ci/.github/workflows/app.yml@main
+#       with:
+#         app: amp
+#         repo-dir: tasamp
+#       permissions:
+#         contents: write
+#
+# Pull requests deliberately do not trigger it: the runner is a self-hosted
+# machine and these repositories are public.
+name: air/OS app build
+
+on:
+  workflow_call:
+    inputs:
+      app:
+        description: build-app-packages.sh name (amp, airtime, airshot, burrow, clipper, kiri, natter, turbochook, ...)
+        required: true
+        type: string
+      repo-dir:
+        description: the repository directory name build-app-packages.sh expects (tasamp, airTime, airShot, ...)
+        required: true
+        type: string
+      architectures:
+        description: space-separated list of architectures to build
+        required: false
+        type: string
+        default: x86_64 arm64
+      airos-ci-ref:
+        description: airos-ci revision with the build scripts
+        required: false
+        type: string
+        default: main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: airos-app-${{ github.repository }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: [self-hosted, airos-build]
+    timeout-minutes: 180
+    steps:
+      - name: Check out ${{ github.repository }}
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Fetch airos-ci
+        run: |
+          rm -rf "$RUNNER_TEMP/airos-ci"
+          git clone -q --depth 1 --branch "${{ inputs.airos-ci-ref }}" \
+            https://github.com/jmgasper/airos-ci.git "$RUNNER_TEMP/airos-ci"
+          git -C "$RUNNER_TEMP/airos-ci" log --oneline -1
+
+      - name: Build packages
+        env:
+          OUT_LIST: ${{ runner.temp }}/packages.txt
+        run: |
+          rm -f "$OUT_LIST"
+          for arch in ${{ inputs.architectures }}; do
+            echo "::group::$arch"
+            "$RUNNER_TEMP/airos-ci/apps/ci-build-app.sh" "$arch" "${{ inputs.app }}" "${{ inputs.repo-dir }}" "$GITHUB_WORKSPACE"
+            echo "::endgroup::"
+          done
+          echo "## Packages" >> "$GITHUB_STEP_SUMMARY"
+          while read -r package; do
+            echo "- \`$(basename "$package")\` ($(du -h "$package" | cut -f1))" >> "$GITHUB_STEP_SUMMARY"
+          done < "$OUT_LIST"
+
+      - name: Keep the packages with the run
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ inputs.app }}-packages
+          path: ${{ runner.temp }}/out-*/*.hpkg
+          retention-days: 14
+
+      - name: Publish release and README links
+        if: github.ref_name == github.event.repository.default_branch
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mapfile -t packages < "${{ runner.temp }}/packages.txt"
+          "$RUNNER_TEMP/airos-ci/apps/publish.sh" "${packages[@]}"
