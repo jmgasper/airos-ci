@@ -84,8 +84,13 @@ gl=$AIROS_ROOT/image-inputs/$TARGET
 [[ -d $gl/egl ]] && cp -a "$gl/egl/." "$WORK/egl/"
 [[ -d $gl/demos ]] && cp -a "$gl/demos/." "$WORK/demos/"
 [[ -d $gl/firmware ]] && cp -a "$gl/firmware/." "$WORK/firmware/"
-# x86_64: nvidia_rm, its accelerant and NVDEC (deps/build-nvidia.sh)
-[[ -d $gl/nvidia/add-ons ]] && cp -a "$gl/nvidia/add-ons/." "$WORK/add-ons/"
+# x86_64: nvidia_rm, its accelerant and NVDEC (deps/build-nvidia.sh), NVK
+# (deps/build-nvk.sh), the Zink renderer (deps/build-zink.sh): each a tree
+# with lib/ and add-ons/
+for part in "$gl"/nvidia "$gl"/nvk "$gl"/zink; do
+	[[ -d $part/lib ]] && cp -a "$part/lib/." "$WORK/libs/"
+	[[ -d $part/add-ons ]] && cp -a "$part/add-ons/." "$WORK/add-ons/"
+done
 rpi_firmware=$gl/rpi-firmware
 ls -1 "$WORK/packages"
 [[ ${#missing[@]} -eq 0 ]] || echo "warning: not in the package pool yet: ${missing[*]}" >&2

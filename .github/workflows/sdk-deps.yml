@@ -63,6 +63,10 @@ jobs:
           echo "::group::x86_64 NVIDIA (nvidia_rm, accelerant, NVDEC)"
           deps/build-nvidia.sh
           echo "::endgroup::"
+          echo "::group::x86_64 NVK (Vulkan) and the Zink OpenGL renderer"
+          deps/build-nvk.sh
+          deps/build-zink.sh
+          echo "::endgroup::"
 
       - name: Summary
         run: |
