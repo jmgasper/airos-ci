@@ -47,10 +47,15 @@ jobs:
             deps/build-deps.sh "$arch"
             echo "::endgroup::"
           done
+          echo "::group::firmware"
+          deps/build-firmware.sh
+          echo "::endgroup::"
           {
             echo "## Package pool"
             for arch in x86_64 arm64; do
               echo "### $arch ($(cat /data1/airos/sdk/$arch/revision))"
               ls /data2/airos/packages/$arch | sed 's/^/- /'
             done
+            echo "### any"
+            ls /data2/airos/packages/any | sed 's/^/- /'
           } >> "$GITHUB_STEP_SUMMARY"
