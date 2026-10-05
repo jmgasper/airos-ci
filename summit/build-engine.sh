@@ -138,9 +138,13 @@ cmake -S "$SRC" -B "$B" -G Ninja -C "$SUMMIT_DIR/engine/arm64/rpi4-gl/init-cache
 grep -E "^-- (Enabled|  ENABLE_WEB_RTC|  USE_SKIA|  ENABLE_WEBGL )" "$B/configure.log" | head -10 || true
 
 note "build ($JOBS jobs)"
-# One engine build at a time on the host: each takes about all of its memory.
+# One big engine build at a time on the host: each takes about all of its
+# memory. A few steps (CMake rewrites some inputs on every configure) do not
+# wait for another engine's build.
 start=$SECONDS
-if ! flock "$AIROS_LOCKS/webkit-build.lock" nice -n 10 ninja -C "$B" -j"$JOBS" > "$B/build.log" 2>&1; then
+lock=(flock "$AIROS_LOCKS/webkit-build.lock")
+(( $(ninja -C "$B" -n 2>/dev/null | grep -c '^\[') > 100 )) || lock=()
+if ! "${lock[@]}" nice -n 10 ninja -C "$B" -j"$JOBS" > "$B/build.log" 2>&1; then
 	grep -m 5 -B 2 -A 12 -E "error:|FAILED:" "$B/build.log" | head -80
 	die "WebKit build failed (log: $B/build.log)"
 fi

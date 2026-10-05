@@ -299,6 +299,8 @@ needed_libraries() {
 		done
 		[[ -z $path && -e $SUMMIT_ENGINE/lib/$needed ]] \
 			&& path="$(readlink -f "$SUMMIT_ENGINE/lib/$needed") (Summit engine)"
+		[[ -z $path && -e ${SUMMIT_ENGINE_BUILD:-/nonexistent}/lib/$needed ]] \
+			&& path="$(readlink -f "$SUMMIT_ENGINE_BUILD/lib/$needed") (Summit engine build)"
 		printf '    %-20s %s\n' "$needed" "${path:-NOT FOUND}"
 		# What libcurl itself pulls in.
 		if [[ $needed == libcurl.so.4 && -n $path ]]; then

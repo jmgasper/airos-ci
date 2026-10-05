@@ -12,7 +12,7 @@
 #      Haiku GL kit headers) into a GL sysroot;
 #   3. Mesa three times: Panfrost (ROCK 5), V3D (Raspberry Pi 4), and the
 #      V3D Vulkan driver;
-#   4. GLU and the GLTeapot demo.
+#   4. GLU, the GLTeapot demo and GLInfo.
 #
 # Results:
 #   $AIROS_ROOT/image-inputs/arm64/{lib,egl,demos}   ROCK 5 / EFI image
@@ -200,6 +200,21 @@ ${CROSS}g++ --sysroot="$GLROOT" -specs="$UNWIND_SPECS" -std=gnu++17 -O2 -Wall \
 "$TOOLS/rc/rc" -o "$W/GLTeapot.rsrc" "$app/GLTeapot.rdef"
 ${CROSS}strip --strip-debug "$W/GLTeapot"
 "$TOOLS/xres" -o "$W/GLTeapot" "$W/GLTeapot.rsrc"
+# GLInfo (renderer, version and extensions), as the ROCK 5 lab image had it
+# (tools/rock5-itx/build-glinfo-package.sh).
+app=$HAIKU_SOURCE/src/tests/kits/opengl/glinfo
+rm -rf "$W/glinfo" && mkdir -p "$W/glinfo"
+for source in "$app"/*.cpp; do
+	${CROSS}g++ --sysroot="$GLROOT" -std=gnu++17 -O2 -fPIC -I"$HAIKU_SOURCE/headers/private/interface" \
+		-I"$HAIKU_SOURCE/headers/libs/glut" -I"$headers/os/opengl" -I"$glu/develop/headers/os/opengl" \
+		-c "$source" -o "$W/glinfo/$(basename "${source%.cpp}").o"
+done
+${CROSS}g++ --sysroot="$GLROOT" -specs="$UNWIND_SPECS" -std=gnu++17 -O2 "$W"/glinfo/*.o \
+	"$system/develop/lib/libcolumnlistview.a" -L"$glvnd/lib" -L"$glu/lib" -Wl,-rpath-link,"$system/lib" \
+	-lbe -ltranslation -llocalestub -lsupc++ -lGLU -lGL -o "$W/GLInfo"
+"$TOOLS/rc/rc" -o "$W/GLInfo.rsrc" "$app/GLInfo.rdef"
+${CROSS}strip --strip-debug "$W/GLInfo"
+"$TOOLS/xres" -o "$W/GLInfo" "$W/GLInfo.rsrc"
 
 note "image inputs"
 stage_target() { # stage_target TARGET EGL_LIBRARY VENDOR_FILE [extra libs...]
@@ -218,7 +233,7 @@ stage_target() { # stage_target TARGET EGL_LIBRARY VENDOR_FILE [extra libs...]
 	${CROSS}strip --strip-unneeded "$out"/lib/*
 	printf '{\n  "file_format_version": "1.0.0",\n  "ICD": {\n    "library_path": "/boot/system/non-packaged/lib/libEGL_mesa.so.0"\n  }\n}\n' \
 		> "$out/egl/$vendor"
-	cp "$W/GLTeapot" "$out/demos/"
+	cp "$W/GLTeapot" "$W/GLInfo" "$out/demos/"
 	printf 'mesa %s\nlibglvnd %s\nglu %s\nhaiku %s\n' "$MESA_COMMIT" "$GLVND_COMMIT" "$GLU_COMMIT" \
 		"$HAIKU_REVISION" > "$out/gl-sources.txt"
 	echo "$target: $(ls "$out/lib" | tr '\n' ' ')"
