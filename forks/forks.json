@@ -7,7 +7,7 @@
     },
     "summit": {
       "repo": "jmgasper/summit",
-      "ref": "ca44cf9"
+      "ref": "ca44cf9614b491fe693cc51d0e9ce0ed18716b04"
     },
     "burrow": {
       "repo": "jmgasper/burrow",
@@ -325,6 +325,325 @@
       "branch": "airos-2.11.haiku.1",
       "patches": [],
       "used_by": "arm64 images: WPA/WPA2 Wi-Fi (deps/recipes/wpa_supplicant.sh); x86_64 gets HaikuPorts' wpa_supplicant"
+    },
+    {
+      "name": "mesa",
+      "wave": 3,
+      "create": "import",
+      "description": "Mesa 3D (from the release tarballs; upstream is gitlab.freedesktop.org/mesa/mesa) with the air/OS Haiku ports: Panfrost/Mali CSF for the ROCK 5, V3D for the Raspberry Pi",
+      "branch": "airos-25.3.6",
+      "patches": [
+        {
+          "tarball": "https://archive.mesa3d.org/mesa-25.3.6.tar.xz",
+          "sha256": "59217efeac3b64e7ced958324b9db7494f1e0741aeb22d780276514cc1b8f206",
+          "strip": 1,
+          "into": ".",
+          "message": "Import Mesa 25.3.6 (mesa-25.3.6.tar.xz)"
+        },
+        {
+          "from": "haiku:tools/rock5-itx/mesa/mesa-haiku-native.patch",
+          "message": "Haiku: native Panfrost/Mali CSF winsys and HaikuPorts changes (mesa-haiku-native.patch)"
+        },
+        {
+          "from": "haiku:tools/rock5-itx/mesa/mesa-haiku-quad-fill.patch",
+          "message": "panfrost: quad fill for the Haiku polygon path (mesa-haiku-quad-fill.patch)"
+        },
+        {
+          "from": "haiku:tools/rpi4/mesa/mesa-haiku-v3d.patch",
+          "message": "Haiku: V3D (Raspberry Pi 4) winsys (mesa-haiku-v3d.patch)"
+        },
+        {
+          "from": "ci:forks/patches/mesa-hgl-format-dep.patch",
+          "message": "hgl: depend on the generated format header (parallel build race)"
+        }
+      ],
+      "used_by": "arm64 images: libEGL_mesa (Panfrost on the ROCK 5, V3D on the Pi) and libvulkan_broadcom (deps/recipes/gl.sh)"
+    },
+    {
+      "name": "libglvnd",
+      "wave": 3,
+      "create": "fork",
+      "github": "NVIDIA/libglvnd",
+      "base": "v1.7.0",
+      "branch": "airos-1.7.0",
+      "patches": [
+        {
+          "from": "haiku:tools/rock5-itx/mesa/libglvnd-1.7.0.patchset"
+        },
+        {
+          "from": "haiku:tools/rock5-itx/mesa/libglvnd-haiku-sysroot.patch",
+          "message": "Haiku: build against a cross sysroot"
+        },
+        {
+          "from": "haiku:tools/rock5-itx/mesa/libglvnd-haiku-mutex.patch",
+          "message": "Haiku: GLView mutex"
+        },
+        {
+          "from": "haiku:tools/rock5-itx/mesa/libglvnd-haiku-bitmap.patch",
+          "message": "Haiku: GLView bitmap path"
+        },
+        {
+          "from": "haiku:tools/rock5-itx/mesa/libglvnd-haiku-present.patch",
+          "message": "Haiku: GLView present"
+        }
+      ],
+      "used_by": "arm64 images: libGL, libEGL, libGLESv2, libOpenGL, libGLdispatch and the Haiku GL kit"
+    },
+    {
+      "name": "glu",
+      "wave": 3,
+      "create": "import",
+      "description": "GLU 9.0.3 (from the release tarball; upstream is gitlab.freedesktop.org/mesa/glu)",
+      "branch": "airos-9.0.3",
+      "patches": [
+        {
+          "tarball": "https://archive.mesa3d.org/glu/glu-9.0.3.tar.xz",
+          "sha256": "bd43fe12f374b1192eb15fe20e45ff456b9bc26ab57f0eee919f96ca0f8a330f",
+          "strip": 1,
+          "into": ".",
+          "message": "Import GLU 9.0.3 (glu-9.0.3.tar.xz)"
+        }
+      ],
+      "used_by": "arm64 images: libGLU (GLTeapot)"
+    },
+    {
+      "name": "webkit",
+      "repo": "WebKit",
+      "wave": 4,
+      "create": "fork",
+      "github": "WebKit/WebKit",
+      "base": "00991b6cdc59937da6076c69a22ae6a9460a4445",
+      "branch": "summit-00991b6c",
+      "shallow": true,
+      "sparse": true,
+      "patches": [
+        {
+          "from": "summit:engine/patches/0001-haiku-port.patch",
+          "message": "Haiku port for Summit (haikuwebkit 295ca319, rebased onto 00991b6c)"
+        },
+        {
+          "from": "summit:engine/arm64/patches/webkit-arm64-haiku.patch",
+          "message": "Haiku arm64: ARM64Assembler, offlineasm, MachineContext, extension tabs"
+        }
+      ],
+      "used_by": "Summit's engine (summit_webkit), both architectures"
+    },
+    {
+      "name": "libpsl",
+      "wave": 4,
+      "create": "fork",
+      "github": "rockdaboot/libpsl",
+      "base": "0.21.5",
+      "branch": "airos-0.21.5",
+      "patches": [
+        {
+          "tarball": "https://github.com/rockdaboot/libpsl/releases/download/0.21.5/libpsl-0.21.5.tar.gz",
+          "sha256": "1dcc9ceae8b128f3c0b3f654decd0e1e891afc6ff81098f227ef260449dae208",
+          "strip": 1,
+          "into": ".",
+          "message": "Release tarball contents (with the generated build files the release ships)"
+        }
+      ],
+      "used_by": "Summit engine dependency (arm64 build-deps.sh)"
+    },
+    {
+      "name": "libxml2",
+      "wave": 4,
+      "create": "fork",
+      "github": "GNOME/libxml2",
+      "base": "v2.14.5",
+      "branch": "airos-v2.14.5",
+      "patches": [
+        {
+          "tarball": "https://download.gnome.org/sources/libxml2/2.14/libxml2-2.14.5.tar.xz",
+          "sha256": "03d006f3537616833c16c53addcdc32a0eb20e55443cba4038307e3fa7d8d44b",
+          "strip": 1,
+          "into": ".",
+          "message": "Release tarball contents (with the generated build files the release ships)"
+        }
+      ],
+      "used_by": "Summit engine dependency (arm64 build-deps.sh)"
+    },
+    {
+      "name": "libxslt",
+      "wave": 4,
+      "create": "fork",
+      "github": "GNOME/libxslt",
+      "base": "v1.1.43",
+      "branch": "airos-v1.1.43",
+      "patches": [
+        {
+          "tarball": "https://download.gnome.org/sources/libxslt/1.1/libxslt-1.1.43.tar.xz",
+          "sha256": "5a3d6b383ca5afc235b171118e90f5ff6aa27e9fea3303065231a6d403f0183a",
+          "strip": 1,
+          "into": ".",
+          "message": "Release tarball contents (with the generated build files the release ships)"
+        }
+      ],
+      "used_by": "Summit engine dependency (arm64 build-deps.sh)"
+    },
+    {
+      "name": "libjpeg-turbo",
+      "wave": 4,
+      "create": "fork",
+      "github": "libjpeg-turbo/libjpeg-turbo",
+      "base": "3.0.4",
+      "branch": "airos-3.0.4",
+      "patches": [],
+      "used_by": "Summit engine dependency (arm64 build-deps.sh)"
+    },
+    {
+      "name": "libpng",
+      "wave": 4,
+      "create": "fork",
+      "github": "pnggroup/libpng",
+      "base": "v1.6.44",
+      "branch": "airos-v1.6.44",
+      "patches": [
+        {
+          "tarball": "https://download.sourceforge.net/libpng/libpng-1.6.44.tar.xz",
+          "sha256": "60c4da1d5b7f0aa8d158da48e8f8afa9773c1c8baa5d21974df61f1886b8ce8e",
+          "strip": 1,
+          "into": ".",
+          "message": "Release tarball contents (with the generated build files the release ships)"
+        }
+      ],
+      "used_by": "Summit engine dependency (arm64 build-deps.sh)"
+    },
+    {
+      "name": "libwebp",
+      "wave": 4,
+      "create": "fork",
+      "github": "webmproject/libwebp",
+      "base": "v1.4.0",
+      "branch": "airos-v1.4.0",
+      "patches": [],
+      "used_by": "Summit engine dependency (arm64 build-deps.sh)"
+    },
+    {
+      "name": "lcms2",
+      "wave": 4,
+      "create": "fork",
+      "github": "mm2/Little-CMS",
+      "base": "lcms2.16",
+      "branch": "airos-lcms2.16",
+      "patches": [],
+      "used_by": "Summit engine dependency (arm64 build-deps.sh)",
+      "repo": "Little-CMS"
+    },
+    {
+      "name": "brotli",
+      "wave": 4,
+      "create": "fork",
+      "github": "google/brotli",
+      "base": "v1.1.0",
+      "branch": "airos-v1.1.0",
+      "patches": [],
+      "used_by": "Summit engine dependency (arm64 build-deps.sh)"
+    },
+    {
+      "name": "woff2",
+      "wave": 4,
+      "create": "fork",
+      "github": "google/woff2",
+      "base": "v1.0.2",
+      "branch": "airos-v1.0.2",
+      "patches": [],
+      "used_by": "Summit engine dependency (arm64 build-deps.sh)"
+    },
+    {
+      "name": "libzip",
+      "wave": 4,
+      "create": "fork",
+      "github": "nih-at/libzip",
+      "base": "v1.11.4",
+      "branch": "airos-v1.11.4",
+      "patches": [],
+      "used_by": "Summit engine dependency (arm64 build-deps.sh)"
+    },
+    {
+      "name": "icu",
+      "wave": 4,
+      "create": "fork",
+      "github": "unicode-org/icu",
+      "base": "release-78.3",
+      "branch": "airos-release-78.3",
+      "patches": [],
+      "used_by": "Summit engine: ICU 78.3 (engine/icu.lock.json), both architectures"
+    },
+    {
+      "name": "freetype",
+      "wave": 4,
+      "create": "fork",
+      "github": "freetype/freetype",
+      "base": "VER-2-13-3",
+      "branch": "airos-VER-2-13-3",
+      "patches": [
+        {
+          "tarball": "https://download.savannah.gnu.org/releases/freetype/freetype-2.13.3.tar.xz",
+          "sha256": "0550350666d427c74daeb85d5ac7bb353acba5f76956395995311a9c6f063289",
+          "strip": 1,
+          "into": ".",
+          "message": "Release tarball contents (with the generated build files the release ships)"
+        }
+      ],
+      "used_by": "Summit engine with GL compositing (Pi / ROCK 5 build-gl-deps.sh)"
+    },
+    {
+      "name": "expat",
+      "wave": 4,
+      "create": "fork",
+      "github": "libexpat/libexpat",
+      "base": "R_2_6_4",
+      "branch": "airos-R_2_6_4",
+      "patches": [
+        {
+          "tarball": "https://github.com/libexpat/libexpat/releases/download/R_2_6_4/expat-2.6.4.tar.xz",
+          "sha256": "a695629dae047055b37d50a0ff4776d1d45d0a4c842cf4ccee158441f55ff7ee",
+          "strip": 1,
+          "into": "expat",
+          "message": "Release tarball contents (with the generated build files the release ships)"
+        }
+      ],
+      "used_by": "Summit engine with GL compositing (Pi / ROCK 5 build-gl-deps.sh)",
+      "repo": "libexpat"
+    },
+    {
+      "name": "fontconfig",
+      "wave": 4,
+      "create": "import",
+      "description": "Fontconfig 2.15.0 (from the release tarball; upstream is gitlab.freedesktop.org/fontconfig/fontconfig)",
+      "branch": "airos-2.15.0",
+      "patches": [
+        {
+          "tarball": "https://www.freedesktop.org/software/fontconfig/release/fontconfig-2.15.0.tar.xz",
+          "sha256": "63a0658d0e06e0fa886106452b58ef04f21f58202ea02a94c39de0d3335d7c0e",
+          "strip": 1,
+          "into": ".",
+          "message": "Import Fontconfig 2.15.0 (fontconfig-2.15.0.tar.xz)"
+        }
+      ],
+      "used_by": "Summit engine with GL compositing (Pi / ROCK 5 build-gl-deps.sh)"
+    },
+    {
+      "name": "harfbuzz",
+      "wave": 4,
+      "create": "fork",
+      "github": "harfbuzz/harfbuzz",
+      "base": "10.1.0",
+      "branch": "airos-10.1.0",
+      "patches": [],
+      "used_by": "Summit engine with GL compositing (Pi / ROCK 5 build-gl-deps.sh)"
+    },
+    {
+      "name": "libepoxy",
+      "wave": 4,
+      "create": "fork",
+      "github": "anholt/libepoxy",
+      "base": "1.5.10",
+      "branch": "airos-1.5.10",
+      "patches": [],
+      "used_by": "Summit engine with GL compositing (Pi / ROCK 5 build-gl-deps.sh)"
     }
   ]
 }

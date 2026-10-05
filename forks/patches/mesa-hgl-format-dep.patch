@@ -1,0 +1,27 @@
+hgl: depend on the generated format header
+
+hgl.c and hgl_sw_winsys.cpp include util/format/u_formats.h, which includes
+the generated u_format_gen.h; without the dependency a parallel build can
+compile them before that header exists (d3d10umd and wgl already declare it).
+
+diff --git a/src/gallium/frontends/hgl/meson.build b/src/gallium/frontends/hgl/meson.build
+--- a/src/gallium/frontends/hgl/meson.build
++++ b/src/gallium/frontends/hgl/meson.build
+@@ -14,5 +14,6 @@ libsthgl = static_library(
+     inc_include, inc_util, inc_mesa, inc_src,
+     inc_gallium, inc_gallium_aux
+   ],
++  dependencies : idep_mesautilformat,
+   gnu_symbol_visibility : 'hidden',
+ )
+diff --git a/src/gallium/winsys/sw/hgl/meson.build b/src/gallium/winsys/sw/hgl/meson.build
+--- a/src/gallium/winsys/sw/hgl/meson.build
++++ b/src/gallium/winsys/sw/hgl/meson.build
+@@ -8,6 +8,6 @@ libswhgl = static_library(
+   include_directories : [inc_gallium, inc_include, inc_src, inc_gallium_aux,
+     include_directories('../../../frontends/hgl')
+   ],
+-  dependencies: idep_mesautil,
++  dependencies: [idep_mesautil, idep_mesautilformat],
+   build_by_default : false,
+ )

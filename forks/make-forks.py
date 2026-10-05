@@ -30,6 +30,7 @@ import time
 import urllib.request
 
 HERE = os.path.dirname(os.path.abspath(__file__))
+CI_ROOT = os.path.dirname(HERE)
 OWNER = os.environ.get("GITHUB_OWNER", "jmgasper")
 TRAILER = "\n\nCo-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
 
@@ -59,6 +60,8 @@ class Sources:
         self.spec, self.workdir = spec, workdir
 
     def path(self, name):
+        if name == "ci":
+            return CI_ROOT
         d = os.path.join(self.workdir, ".sources", name)
         if not os.path.isdir(d):
             run(["git", "clone", "-q", "--filter=blob:none", "--no-checkout",
@@ -69,15 +72,23 @@ class Sources:
             run(["git", "-C", d, "fetch", "-q", "--filter=blob:none", "origin"])
         return d
 
+    def ref(self, name):
+        # "ci:" is airos-ci itself, at its committed HEAD (so a patch must be in
+        # git before a fork can use it).
+        if name == "ci":
+            return run(["git", "-C", CI_ROOT, "rev-parse", "HEAD"], capture=True)
+        return self.spec[name]["ref"]
+
     def read(self, ref):
         name, path = ref.split(":", 1)
         d = self.path(name)
-        return subprocess.run(["git", "-C", d, "show", f"{self.spec[name]['ref']}:{path}"],
+        return subprocess.run(["git", "-C", d, "show", f"{self.ref(name)}:{path}"],
                               check=True, stdout=subprocess.PIPE).stdout
 
     def describe(self, ref):
         name, path = ref.split(":", 1)
-        return f"{self.spec[name]['repo']}@{self.spec[name]['ref'][:10]}:{path}"
+        repo = "jmgasper/airos-ci" if name == "ci" else self.spec[name]["repo"]
+        return f"{repo}@{self.ref(name)[:10]}:{path}"
 
 
 def split_patch(data, prefix):
@@ -98,6 +109,12 @@ def apply_patch(repo, data, message, origin):
         if re.search(rb"(?m)^From [0-9a-f]{40} ", data):
             run(["git", "am", "-q", "--keep-cr", "--committer-date-is-author-date", name], cwd=repo)
             return
+        if re.search(rb"(?m)^diff --git ", data) and subprocess.run(
+                ["git", "apply", "--check", "--whitespace=nowarn", name], cwd=repo,
+                stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
+            run(["git", "apply", "--whitespace=nowarn", name], cwd=repo)
+            commit(repo, message or f"air/OS: {os.path.basename(origin)}", origin)
+            return
         for level in (1, 2, 0, 3):
             if subprocess.run(["patch", f"-p{level}", "--dry-run", "-s", "-f", "-i", name],
                               cwd=repo, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL).returncode == 0:
@@ -111,7 +128,8 @@ def apply_patch(repo, data, message, origin):
 
 
 def commit(repo, message, origin):
-    run(["git", "add", "-A"], cwd=repo)
+    # --sparse: a sparse fork (WebKit) still records every file a patch made.
+    run(["git", "add", "-A", "--sparse"], cwd=repo)
     if run(["git", "diff", "--cached", "--quiet"], cwd=repo, check=False) == 0:
         print(f"  (no changes from {origin})", file=sys.stderr)
         return
@@ -202,8 +220,27 @@ def make(c, sources, workdir, lock, force):
                 commit_sha = json.loads(gh("api", f"repos/{c['github']}/git/tags/{commit_sha}"))["object"]["sha"]
         if gh("api", f"repos/{full}/branches/{branch}", "--jq", ".commit.sha", check=False) != commit_sha:
             gh("api", "-X", "DELETE", f"repos/{full}/git/refs/heads/{branch}", check=False)
-            gh("api", "-X", "POST", f"repos/{full}/git/refs", "-f", f"ref=refs/heads/{branch}",
-               "-f", f"sha={commit_sha}")
+            # Through the API when possible. GitHub refuses it (404) for a commit
+            # whose tree has .github/workflows unless the token has the workflow
+            # scope, so fall back to pushing the ref over ssh (nothing to upload:
+            # the fork has the commit). A new fork is created asynchronously,
+            # hence the retries.
+            for attempt in range(30):
+                gh("api", "-X", "POST", f"repos/{full}/git/refs", "-f", f"ref=refs/heads/{branch}",
+                   "-f", f"sha={commit_sha}", check=False)
+                if gh("api", f"repos/{full}/branches/{branch}", "--jq", ".commit.sha",
+                      check=False) == commit_sha:
+                    break
+                with tempfile.TemporaryDirectory(dir=workdir) as tmp:
+                    run(["git", "init", "-q", tmp])
+                    if run(["git", "-C", tmp, "fetch", "-q", "--depth=1", "--filter=blob:none",
+                            f"git@github.com:{full}.git", commit_sha], check=False) == 0 and \
+                            run(["git", "-C", tmp, "push", "-q", f"git@github.com:{full}.git",
+                                 f"{commit_sha}:refs/heads/{branch}"], check=False) == 0:
+                        break
+                time.sleep(5)
+            else:
+                sys.exit(f"error: cannot create {branch} in {full}")
         lock[name] = {"repo": repo_name, "url": f"https://github.com/{full}.git", "branch": branch,
                       "commit": commit_sha, "base": base, "base_commit": commit_sha,
                       "upstream": f"https://github.com/{c['github']}.git"}
@@ -244,7 +281,32 @@ def make(c, sources, workdir, lock, force):
         remote = "origin" if c["create"] == "fork" else "upstream"
         if subprocess.run(["git", "cat-file", "-e", f"{base_rev}^{{commit}}"], cwd=d,
                           stderr=subprocess.DEVNULL).returncode != 0:
-            run(["git", "fetch", "-q", "--filter=blob:none", "--no-tags", remote, fetch_ref], cwd=d)
+            depth = ["--depth=1"] if c.get("shallow") else []
+            run(["git", "fetch", "-q", "--filter=blob:none", "--no-tags", *depth, remote, fetch_ref], cwd=d)
+        if c.get("sparse"):
+            # Huge trees (WebKit): check out only what the patches touch.
+            paths = set()
+            for p in c.get("patches", []):
+                if "from" in p:
+                    data = sources.read(p["from"])
+                    # "diff --git a/X b/X" (binary and mode-only changes have
+                    # nothing else), with names that may have spaces
+                    # ("Directory Listing Template.html"), and "--- a/X" /
+                    # "+++ b/Y" for renames.
+                    for m in re.finditer(rb"(?m)^diff --git a/(.+) b/(.+)$", data):
+                        line = m.group(0)[len(b"diff --git a/"):]
+                        half = (len(line) - len(b" b/")) // 2
+                        if line[:half] == line[half + 3:]:
+                            paths.add(line[:half].decode())
+                        else:
+                            paths.update({m.group(1).split(b" ")[0].decode(),
+                                          m.group(2).split(b" ")[-1].decode()})
+                    for m in re.finditer(rb"(?m)^(?:---|\+\+\+) [ab]/(.+?)\t?$", data):
+                        paths.add(m.group(1).decode())
+            paths = {"/" + re.sub(r"([\\*?\[\]!# ])", r"\\\1", path) for path in paths}
+            run(["git", "sparse-checkout", "set", "--no-cone", "--stdin"], cwd=d,
+                input="\n".join(sorted(paths)) + "\n")
+            print(f"  sparse checkout of {len(paths)} paths", file=sys.stderr)
         base_commit = run(["git", "rev-parse", f"{base_rev}^{{commit}}"], cwd=d, capture=True)
         run(["git", "checkout", "-q", "-f", "-B", branch, base_commit], cwd=d)
     else:
@@ -351,6 +413,12 @@ def main():
         if only and c["name"] not in only:
             continue
         make(c, sources, args.workdir, lock, args.force)
+        # Re-read the lock before writing it: another make-forks.py may have
+        # recorded other forks since this one started.
+        current = json.load(open(lock_path)) if os.path.exists(lock_path) else {}
+        if c["name"] in lock:
+            current[c["name"]] = lock[c["name"]]
+        lock = current
         with open(lock_path, "w") as f:
             json.dump(lock, f, indent=2, sort_keys=True)
             f.write("\n")

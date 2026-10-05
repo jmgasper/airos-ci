@@ -8,6 +8,15 @@
     "upstream": null,
     "url": "https://github.com/jmgasper/airos-firmware.git"
   },
+  "brotli": {
+    "base": "v1.1.0",
+    "base_commit": "ed738e842d2fbdf2d6459e39267a633c4a9b2f5d",
+    "branch": "airos-v1.1.0",
+    "commit": "ed738e842d2fbdf2d6459e39267a633c4a9b2f5d",
+    "repo": "brotli",
+    "upstream": "https://github.com/google/brotli.git",
+    "url": "https://github.com/jmgasper/brotli.git"
+  },
   "curl": {
     "base": "curl-8_10_1",
     "base_commit": "7eb8c048470ed2cc14dca75be9c1cdae7ac8498b",
@@ -16,6 +25,15 @@
     "repo": "curl",
     "upstream": "https://github.com/curl/curl.git",
     "url": "https://github.com/jmgasper/curl.git"
+  },
+  "expat": {
+    "base": "R_2_6_4",
+    "base_commit": "2691aff4304a6d7e053199c205620136481b9dd1",
+    "branch": "airos-R_2_6_4",
+    "commit": "2691aff4304a6d7e053199c205620136481b9dd1",
+    "repo": "libexpat",
+    "upstream": "https://github.com/libexpat/libexpat.git",
+    "url": "https://github.com/jmgasper/libexpat.git"
   },
   "ffmpeg": {
     "base": "n6.1.6",
@@ -26,6 +44,60 @@
     "upstream": "https://github.com/FFmpeg/FFmpeg.git",
     "url": "https://github.com/jmgasper/ffmpeg.git"
   },
+  "fontconfig": {
+    "base": null,
+    "base_commit": null,
+    "branch": "airos-2.15.0",
+    "commit": "a38a66fa134abfcc2236c8d48c25735ec7529566",
+    "repo": "fontconfig",
+    "upstream": null,
+    "url": "https://github.com/jmgasper/fontconfig.git"
+  },
+  "freetype": {
+    "base": "VER-2-13-3",
+    "base_commit": "42608f77f20749dd6ddc9e0536788eaad70ea4b5",
+    "branch": "airos-VER-2-13-3",
+    "commit": "5a262b81d11e934e0b36c7894c69ae8d9879e00f",
+    "repo": "freetype",
+    "upstream": "https://github.com/freetype/freetype.git",
+    "url": "https://github.com/jmgasper/freetype.git"
+  },
+  "glu": {
+    "base": null,
+    "base_commit": null,
+    "branch": "airos-9.0.3",
+    "commit": "88d0675da7a184e199d05d8ae8a57c97ec33679b",
+    "repo": "glu",
+    "upstream": null,
+    "url": "https://github.com/jmgasper/glu.git"
+  },
+  "harfbuzz": {
+    "base": "10.1.0",
+    "base_commit": "9ef44a2d67ac870c1f7f671f6dc98d08a2579865",
+    "branch": "airos-10.1.0",
+    "commit": "9ef44a2d67ac870c1f7f671f6dc98d08a2579865",
+    "repo": "harfbuzz",
+    "upstream": "https://github.com/harfbuzz/harfbuzz.git",
+    "url": "https://github.com/jmgasper/harfbuzz.git"
+  },
+  "icu": {
+    "base": "release-78.3",
+    "base_commit": "21d1eb0f306e1141c10931e914dfc038c06121da",
+    "branch": "airos-release-78.3",
+    "commit": "21d1eb0f306e1141c10931e914dfc038c06121da",
+    "repo": "icu",
+    "upstream": "https://github.com/unicode-org/icu.git",
+    "url": "https://github.com/jmgasper/icu.git"
+  },
+  "lcms2": {
+    "base": "lcms2.16",
+    "base_commit": "453bafeb85b4ef96498866b7a8eadcc74dff9223",
+    "branch": "airos-lcms2.16",
+    "commit": "453bafeb85b4ef96498866b7a8eadcc74dff9223",
+    "repo": "Little-CMS",
+    "upstream": "https://github.com/mm2/Little-CMS.git",
+    "url": "https://github.com/jmgasper/Little-CMS.git"
+  },
   "lexilla": {
     "base": "rel-5-4-6",
     "base_commit": "1ebf450688655968d0251ff9774a7e3c3b53a34e",
@@ -34,6 +106,96 @@
     "repo": "lexilla",
     "upstream": "https://github.com/ScintillaOrg/lexilla.git",
     "url": "https://github.com/jmgasper/lexilla.git"
+  },
+  "libepoxy": {
+    "base": "1.5.10",
+    "base_commit": "c84bc9459357a40e46e2fec0408d04fbdde2c973",
+    "branch": "airos-1.5.10",
+    "commit": "c84bc9459357a40e46e2fec0408d04fbdde2c973",
+    "repo": "libepoxy",
+    "upstream": "https://github.com/anholt/libepoxy.git",
+    "url": "https://github.com/jmgasper/libepoxy.git"
+  },
+  "libglvnd": {
+    "base": "v1.7.0",
+    "base_commit": "faa23f21fc677af5792825dc30cb1ccef4bf33a6",
+    "branch": "airos-1.7.0",
+    "commit": "9755b3ec1af8eb8e6a59501e66f1aa7cc892e540",
+    "repo": "libglvnd",
+    "upstream": "https://github.com/NVIDIA/libglvnd.git",
+    "url": "https://github.com/jmgasper/libglvnd.git"
+  },
+  "libjpeg-turbo": {
+    "base": "3.0.4",
+    "base_commit": "f29eda648547b36aa594c4116c7764a6c8a079b9",
+    "branch": "airos-3.0.4",
+    "commit": "f29eda648547b36aa594c4116c7764a6c8a079b9",
+    "repo": "libjpeg-turbo",
+    "upstream": "https://github.com/libjpeg-turbo/libjpeg-turbo.git",
+    "url": "https://github.com/jmgasper/libjpeg-turbo.git"
+  },
+  "libpng": {
+    "base": "v1.6.44",
+    "base_commit": "f5e92d76973a7a53f517579bc95d61483bf108c0",
+    "branch": "airos-v1.6.44",
+    "commit": "f5e92d76973a7a53f517579bc95d61483bf108c0",
+    "repo": "libpng",
+    "upstream": "https://github.com/pnggroup/libpng.git",
+    "url": "https://github.com/jmgasper/libpng.git"
+  },
+  "libpsl": {
+    "base": "0.21.5",
+    "base_commit": "ba4c49a205408845834b1648ad23c15ee09f722b",
+    "branch": "airos-0.21.5",
+    "commit": "cfeb2e005f8623e2df973f22682f698572a9b9d4",
+    "repo": "libpsl",
+    "upstream": "https://github.com/rockdaboot/libpsl.git",
+    "url": "https://github.com/jmgasper/libpsl.git"
+  },
+  "libwebp": {
+    "base": "v1.4.0",
+    "base_commit": "845d5476a866141ba35ac133f856fa62f0b7445f",
+    "branch": "airos-v1.4.0",
+    "commit": "845d5476a866141ba35ac133f856fa62f0b7445f",
+    "repo": "libwebp",
+    "upstream": "https://github.com/webmproject/libwebp.git",
+    "url": "https://github.com/jmgasper/libwebp.git"
+  },
+  "libxml2": {
+    "base": "v2.14.5",
+    "base_commit": "74f3154320df8950eceae4951975cc9dfc3a254d",
+    "branch": "airos-v2.14.5",
+    "commit": "74f3154320df8950eceae4951975cc9dfc3a254d",
+    "repo": "libxml2",
+    "upstream": "https://github.com/GNOME/libxml2.git",
+    "url": "https://github.com/jmgasper/libxml2.git"
+  },
+  "libxslt": {
+    "base": "v1.1.43",
+    "base_commit": "71be7a32637760d769b193d95e0c745ecb86b679",
+    "branch": "airos-v1.1.43",
+    "commit": "71be7a32637760d769b193d95e0c745ecb86b679",
+    "repo": "libxslt",
+    "upstream": "https://github.com/GNOME/libxslt.git",
+    "url": "https://github.com/jmgasper/libxslt.git"
+  },
+  "libzip": {
+    "base": "v1.11.4",
+    "base_commit": "6f8a0cdd24a0dc6cce9dac4a7679da784ab124ea",
+    "branch": "airos-v1.11.4",
+    "commit": "6f8a0cdd24a0dc6cce9dac4a7679da784ab124ea",
+    "repo": "libzip",
+    "upstream": "https://github.com/nih-at/libzip.git",
+    "url": "https://github.com/jmgasper/libzip.git"
+  },
+  "mesa": {
+    "base": null,
+    "base_commit": null,
+    "branch": "airos-25.3.6",
+    "commit": "1d77d5d3ff61a84063e2139e08eef11cd169d2b6",
+    "repo": "mesa",
+    "upstream": null,
+    "url": "https://github.com/jmgasper/mesa.git"
   },
   "mpp": {
     "base": "14729dd578e570e5f00fd1dd2113f5429012d64b",
@@ -151,6 +313,15 @@
     "repo": "utfcpp",
     "upstream": "https://github.com/nemtrif/utfcpp.git",
     "url": "https://github.com/jmgasper/utfcpp.git"
+  },
+  "woff2": {
+    "base": "v1.0.2",
+    "base_commit": "1bccf208bca986e53a647dfe4811322adb06ecf8",
+    "branch": "airos-v1.0.2",
+    "commit": "1bccf208bca986e53a647dfe4811322adb06ecf8",
+    "repo": "woff2",
+    "upstream": "https://github.com/google/woff2.git",
+    "url": "https://github.com/jmgasper/woff2.git"
   },
   "wpa_supplicant": {
     "base": "bdf3144ad606b226aca6f8fae103e671e4655138",
