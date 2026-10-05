@@ -386,6 +386,15 @@ def make(c, sources, workdir, lock, force):
         sys.exit(f"error: {name}: nothing committed")
 
     # 4. publish and record
+    if c.get("shallow") and base_commit:
+        # A shallow clone cannot tell that GitHub has the base tree, so the
+        # push would upload all of it (WebKit: 700,000 objects). A tag at the
+        # base, made through the API, is advertised to the push, which then
+        # sends only what the patches changed.
+        tag = f"refs/tags/airos-base-{base_commit[:12]}"
+        if subprocess.run(["gh", "api", f"repos/{full}/git/{tag[5:]}"], stdout=subprocess.DEVNULL,
+                          stderr=subprocess.DEVNULL).returncode != 0:
+            gh("api", "-X", "POST", f"repos/{full}/git/refs", "-f", f"ref={tag}", "-f", f"sha={base_commit}")
     run(["git", "push", "-q", "-f", "origin", f"{branch}:refs/heads/{branch}"], cwd=d)
     head = run(["git", "rev-parse", "HEAD"], cwd=d, capture=True)
     lock[name] = {"repo": repo_name, "url": f"https://github.com/{full}.git", "branch": branch,

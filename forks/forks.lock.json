@@ -192,7 +192,7 @@
     "base": null,
     "base_commit": null,
     "branch": "airos-25.3.6",
-    "commit": "1d77d5d3ff61a84063e2139e08eef11cd169d2b6",
+    "commit": "8d7f976ea85e8fa144e101a4d52f87726945f7df",
     "repo": "mesa",
     "upstream": null,
     "url": "https://github.com/jmgasper/mesa.git"
@@ -313,6 +313,15 @@
     "repo": "utfcpp",
     "upstream": "https://github.com/nemtrif/utfcpp.git",
     "url": "https://github.com/jmgasper/utfcpp.git"
+  },
+  "webkit": {
+    "base": "00991b6cdc59937da6076c69a22ae6a9460a4445",
+    "base_commit": "00991b6cdc59937da6076c69a22ae6a9460a4445",
+    "branch": "summit-00991b6c",
+    "commit": "ed564c8474dd08c705508199433dbf95be0c1b77",
+    "repo": "WebKit",
+    "upstream": "https://github.com/WebKit/WebKit.git",
+    "url": "https://github.com/jmgasper/WebKit.git"
   },
   "woff2": {
     "base": "v1.0.2",
