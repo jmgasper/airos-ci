@@ -296,9 +296,35 @@
             "/LICENCE.mali_csffw*"
           ],
           "message": "linux-firmware eeccccbe: Mali CSF GPU firmware (arch10.8, RK3588)"
+        },
+        {
+          "git": "https://git.kernel.org/pub/scm/linux/kernel/git/firmware/linux-firmware.git",
+          "commit": "eeccccbe83daf22e1931e3557ba05b2c02427e4e",
+          "paths": [
+            "/intel/ibt-0093-*",
+            "/intel/ibt-00a0-*",
+            "/intel/ibt-0190-*",
+            "/intel/ibt-1190-*",
+            "/rtl_bt/rtl8723b_config.bin",
+            "/rtl_bt/rtl8723bs_config*.bin",
+            "/rtl_bt/rtl8723cs_xx_*",
+            "/rtl_bt/rtl8821a_config.bin",
+            "/rtl_bt/rtl8922au_*"
+          ],
+          "message": "Newer Bluetooth chips from linux-firmware eeccccbe\n\nIntel BE200/BE201/AX211-class (ibt-0093, -00a0, -0190, -1190) and Realtek\nRTL8723B/BS/CS, RTL8821A and RTL8922AU files that Ubuntu's linux-firmware\nupdates added after 20240318. Every file present in 3b128b60 (the AX210's\nibt-0041-0041 among them, as tested on the ROCK 5) keeps that version."
         }
       ],
       "used_by": "firmware packages and the Mali firmware in all images (deps/recipes/firmware.sh)"
+    },
+    {
+      "name": "wpa_supplicant",
+      "wave": 2,
+      "create": "fork",
+      "github": "haiku/wpa_supplicant",
+      "base": "bdf3144ad606b226aca6f8fae103e671e4655138",
+      "branch": "airos-2.11.haiku.1",
+      "patches": [],
+      "used_by": "arm64 images: WPA/WPA2 Wi-Fi (deps/recipes/wpa_supplicant.sh); x86_64 gets HaikuPorts' wpa_supplicant"
     }
   ]
 }

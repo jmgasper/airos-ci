@@ -31,7 +31,7 @@ export AIROS_ARCH=$ARCH
 . "$AIROS_CI/lib/fork.sh"
 
 if [[ $ARCH == arm64 ]]; then
-	ORDER=(openssl nghttp2 curl sqlite taglib pcre2 scintilla lexilla rock5_ffmpeg)
+	ORDER=(openssl nghttp2 curl sqlite taglib pcre2 scintilla lexilla rock5_ffmpeg wpa_supplicant)
 else
 	ORDER=(haikuports)
 fi
@@ -96,7 +96,8 @@ normalize_stage() {
 		rmdir "$root/lib/pkgconfig"
 	fi
 	if [[ -d $root/lib/cmake ]]; then mv "$root/lib/cmake" "$root/develop/lib/"; fi
-	find "$root/lib" -maxdepth 1 \( -name '*.a' -o -name '*.la' \) -exec mv {} "$root/develop/lib/" \;
+	[[ ! -d $root/lib ]] \
+		|| find "$root/lib" -maxdepth 1 \( -name '*.a' -o -name '*.la' \) -exec mv {} "$root/develop/lib/" \;
 	rm -f "$root"/develop/lib/*.la
 	# libX.so development links point into lib/
 	for lib in "$root"/lib/*.so; do

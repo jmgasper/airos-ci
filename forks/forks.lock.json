@@ -3,7 +3,7 @@
     "base": null,
     "base_commit": null,
     "branch": "airos",
-    "commit": "2061655316e854d47bd7a4fb85fbb70eb82de4d7",
+    "commit": "70ca081ec9ef60ed170f7a1d9e8d181179dbbffb",
     "repo": "airos-firmware",
     "upstream": null,
     "url": "https://github.com/jmgasper/airos-firmware.git"
@@ -151,5 +151,14 @@
     "repo": "utfcpp",
     "upstream": "https://github.com/nemtrif/utfcpp.git",
     "url": "https://github.com/jmgasper/utfcpp.git"
+  },
+  "wpa_supplicant": {
+    "base": "bdf3144ad606b226aca6f8fae103e671e4655138",
+    "base_commit": "bdf3144ad606b226aca6f8fae103e671e4655138",
+    "branch": "airos-2.11.haiku.1",
+    "commit": "bdf3144ad606b226aca6f8fae103e671e4655138",
+    "repo": "wpa_supplicant",
+    "upstream": "https://github.com/haiku/wpa_supplicant.git",
+    "url": "https://github.com/jmgasper/wpa_supplicant.git"
   }
 }
