@@ -197,6 +197,24 @@
     "upstream": null,
     "url": "https://github.com/jmgasper/mesa.git"
   },
+  "mesa-hgl": {
+    "base": null,
+    "base_commit": null,
+    "branch": "airos-22.0.5-hgl",
+    "commit": "7e9162eb0f22dd29210f07a02648b0c6b78c9988",
+    "repo": "mesa",
+    "upstream": null,
+    "url": "https://github.com/jmgasper/mesa.git"
+  },
+  "mesa-nvk": {
+    "base": "b28d7c6866821b2a70abc0fa0e67b70461bd9da4",
+    "base_commit": "b28d7c6866821b2a70abc0fa0e67b70461bd9da4",
+    "branch": "airos-nvk-r2",
+    "commit": "6be0ad191f48edd128aae97e0d911464f0bb0b00",
+    "repo": "mesa-nvk",
+    "upstream": "https://github.com/X547/mesa.git",
+    "url": "https://github.com/jmgasper/mesa-nvk.git"
+  },
   "mesa-x86_64": {
     "base": null,
     "base_commit": null,
@@ -223,6 +241,24 @@
     "repo": "nghttp2",
     "upstream": "https://github.com/nghttp2/nghttp2.git",
     "url": "https://github.com/jmgasper/nghttp2.git"
+  },
+  "nvidia-haiku": {
+    "base": "cc1849cb2c5c327af4f7eccf993b8616855ad7c5",
+    "base_commit": "cc1849cb2c5c327af4f7eccf993b8616855ad7c5",
+    "branch": "airos",
+    "commit": "cc1849cb2c5c327af4f7eccf993b8616855ad7c5",
+    "repo": "nvidia-haiku",
+    "upstream": "https://github.com/X547/nvidia-haiku.git",
+    "url": "https://github.com/jmgasper/nvidia-haiku.git"
+  },
+  "open-gpu-kernel-modules": {
+    "base": "2badeb8166550238ff2f3f57de61adb89a14642c",
+    "base_commit": "2badeb8166550238ff2f3f57de61adb89a14642c",
+    "branch": "airos-570.86.16-haiku",
+    "commit": "2badeb8166550238ff2f3f57de61adb89a14642c",
+    "repo": "open-gpu-kernel-modules",
+    "upstream": "https://github.com/X547/open-gpu-kernel-modules.git",
+    "url": "https://github.com/jmgasper/open-gpu-kernel-modules.git"
   },
   "openssl": {
     "base": "openssl-3.3.2",

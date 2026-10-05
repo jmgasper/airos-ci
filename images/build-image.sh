@@ -48,7 +48,7 @@ fi
 
 WORK=$AIROS_WORK/image-$TARGET
 rm -rf "$WORK"
-mkdir -p "$WORK"/{packages,libs,egl,demos,firmware}
+mkdir -p "$WORK"/{packages,libs,egl,demos,firmware,add-ons}
 
 # 2. The inputs.
 note "inputs"
@@ -77,12 +77,15 @@ if [[ $ARCH == x86_64 ]]; then
 		x86_64 taglib2 scintilla lexilla lzo lz4 llvm21_libs vulkan \
 		intel_wifi_firmwares ralink_wifi_firmwares realtek_wifi_firmwares | xargs -r cp -t "$WORK/packages/"
 fi
-# GL stack, EGL vendor files, demos and firmware staged by the deps builds.
+# GL stack, EGL vendor files, demos, firmware and add-ons staged by the deps
+# builds.
 gl=$AIROS_ROOT/image-inputs/$TARGET
 [[ -d $gl/lib ]] && cp -a "$gl/lib/." "$WORK/libs/"
 [[ -d $gl/egl ]] && cp -a "$gl/egl/." "$WORK/egl/"
 [[ -d $gl/demos ]] && cp -a "$gl/demos/." "$WORK/demos/"
 [[ -d $gl/firmware ]] && cp -a "$gl/firmware/." "$WORK/firmware/"
+# x86_64: nvidia_rm, its accelerant and NVDEC (deps/build-nvidia.sh)
+[[ -d $gl/nvidia/add-ons ]] && cp -a "$gl/nvidia/add-ons/." "$WORK/add-ons/"
 rpi_firmware=$gl/rpi-firmware
 ls -1 "$WORK/packages"
 [[ ${#missing[@]} -eq 0 ]] || echo "warning: not in the package pool yet: ${missing[*]}" >&2
@@ -104,6 +107,7 @@ fi
 	[[ -z $(ls "$WORK/egl") ]] || echo "AIROS_CI_EGL = $WORK/egl ;"
 	[[ -z $(ls "$WORK/demos") ]] || echo "AIROS_CI_DEMOS = $WORK/demos ;"
 	[[ -z $(ls "$WORK/firmware") ]] || echo "AIROS_CI_FIRMWARE = $WORK/firmware ;"
+	[[ -z $(ls "$WORK/add-ons") ]] || echo "AIROS_CI_ADDONS = $WORK/add-ons ;"
 	[[ $TARGET != rpi4 ]] || echo "HAIKU_RPI_FIRMWARE_DIR = $rpi_firmware ;"
 	echo "include $HAIKU_SOURCE/tools/airos/ci/UserBuildConfig ;"
 } > UserBuildConfig

@@ -194,6 +194,18 @@ def make(c, sources, workdir, lock, force):
         print("  up to date", file=sys.stderr)
         return
 
+    # 0. a branch pushed as it is from a tree with tested history (the X399's
+    #    Mesa trees): only checked and recorded.
+    if c["create"] == "existing":
+        sha = gh("api", f"repos/{full}/branches/{branch}", "--jq", ".commit.sha", check=False)
+        if not re.fullmatch(r"[0-9a-f]{40}", sha or ""):
+            sys.exit(f"error: {full} has no branch {branch}; push it first ({c.get('origin', '')})")
+        lock[name] = {"repo": repo_name, "url": f"https://github.com/{full}.git", "branch": branch,
+                      "commit": sha, "base": c.get("base"), "base_commit": c.get("base"),
+                      "upstream": c.get("upstream")}
+        print(f"  {full} {branch} = {sha[:12]} (existing branch)", file=sys.stderr)
+        return
+
     # 1. the repository
     if c["create"] == "fork":
         if not repo_exists(full):

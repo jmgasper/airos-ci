@@ -37,6 +37,14 @@ successful build of every application.
 - x86_64: HaikuPorts' packages for what the applications need. The x86_64
   `summit_webkit` carries a private Mesa with EGL (llvmpipe, zink), which
   needs HaikuPorts' LLVM 21 and Vulkan loader.
+- x86_64: the X399 workstation's NVIDIA stack in
+  `system/non-packaged/add-ons`, so the boot menu's "Disable user add-ons"
+  turns it off. It is `nvidia_rm` (X547's Haiku OS layer with the RM core of
+  NVIDIA 570.86.16, from jmgasper/open-gpu-kernel-modules), its accelerant,
+  and the NVDEC H.264 decoder, which offers nothing on machines without an
+  NVIDIA card. NVK and Zink (jmgasper/mesa-nvk, jmgasper/mesa
+  `airos-22.0.5-hgl`) are forked but not built yet; see
+  [docs/x86_64-gpu.md](docs/x86_64-gpu.md).
 - Wi-Fi and Bluetooth firmware (Intel, Realtek, MediaTek, Broadcom for the
   Pi) from `jmgasper/airos-firmware` and the Raspberry Pi firmware forks.
 
@@ -58,6 +66,7 @@ Growing the Pi's system volume to fill the SD card is future work:
 | `deps/build-firmware.sh` | firmware packages and image inputs, checked against pinned hashes |
 | `deps/build-gl.sh` | arm64 GL: Mesa Panfrost (ROCK 5), V3D and V3DV (Pi), libglvnd, GLU, GLTeapot |
 | `deps/build-gl-x86_64.sh` | x86_64 GL for Summit's engine: libglvnd and Mesa (llvmpipe, softpipe, zink) |
+| `deps/build-nvidia.sh` | x86_64 NVIDIA: `nvidia_rm`, `nvidia_rm_modeset`, the accelerant, the NVDEC media add-on |
 | `apps/build-app-packages.sh` | cross-builds the applications, `summit_webkit` and `summit` into Haiku packages |
 | `apps/ci-build-app.sh`, `apps/publish.sh` | the CI step of the app pipelines; the release and README update |
 | `summit/` | the Summit pipeline: engine libraries (`build-deps.sh`), WebKit (`build-engine.sh`), packages (`build-summit.sh`) |

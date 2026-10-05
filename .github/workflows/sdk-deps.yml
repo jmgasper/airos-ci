@@ -60,6 +60,9 @@ jobs:
           echo "::group::x86_64 (Summit's private Mesa)"
           deps/build-gl-x86_64.sh
           echo "::endgroup::"
+          echo "::group::x86_64 NVIDIA (nvidia_rm, accelerant, NVDEC)"
+          deps/build-nvidia.sh
+          echo "::endgroup::"
 
       - name: Summary
         run: |

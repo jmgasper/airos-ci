@@ -694,6 +694,49 @@
       "branch": "airos-1.5.10",
       "patches": [],
       "used_by": "Summit engine with GL compositing (Pi / ROCK 5 build-gl-deps.sh)"
+    },
+    {
+      "name": "open-gpu-kernel-modules",
+      "repo": "open-gpu-kernel-modules",
+      "wave": 5,
+      "create": "fork",
+      "github": "X547/open-gpu-kernel-modules",
+      "base": "2badeb8166550238ff2f3f57de61adb89a14642c",
+      "branch": "airos-570.86.16-haiku",
+      "patches": [],
+      "used_by": "x86_64 images: nvidia_rm (NVKMS and the RM headers) and its accelerant (deps/build-nvidia.sh), with the RM core of NVIDIA 570.86.16"
+    },
+    {
+      "name": "nvidia-haiku",
+      "repo": "nvidia-haiku",
+      "wave": 5,
+      "create": "fork",
+      "github": "X547/nvidia-haiku",
+      "base": "cc1849cb2c5c327af4f7eccf993b8616855ad7c5",
+      "branch": "airos",
+      "patches": [],
+      "used_by": "provenance of the nvidia_rm driver sources in haiku src/add-ons/kernel/drivers/graphics/nvidia_rm (its README)"
+    },
+    {
+      "name": "mesa-nvk",
+      "repo": "mesa-nvk",
+      "wave": 5,
+      "create": "existing",
+      "github": "X547/mesa",
+      "base": "b28d7c6866821b2a70abc0fa0e67b70461bd9da4",
+      "branch": "airos-nvk-r2",
+      "upstream": "https://github.com/X547/mesa.git",
+      "origin": "X547/mesa mesa-nvk-r2 (b28d7c6) with haiku docs/x399-workstation/patches/mesa-nvk/0001-0007 (git am), pushed from the X399 build tree",
+      "used_by": "x86_64: NVK (Vulkan on nvidia_rm), and the RM API and class headers of the NVDEC media plug-in"
+    },
+    {
+      "name": "mesa-hgl",
+      "repo": "mesa",
+      "wave": 5,
+      "create": "existing",
+      "branch": "airos-22.0.5-hgl",
+      "origin": "Mesa 22.0.5 (mesa-22.0.5.tar.xz) with HaikuPorts' six Haiku patches (sys-libs/mesa/patches/mesa-22.0.5.patchset) and haiku docs/x399-workstation/patches/mesa-hgl/0001-0014 (git am), pushed from the X399 build tree",
+      "used_by": "x86_64: the Zink renderer add-on of Haiku's OpenGL kit (BGLView programs on Vulkan)"
     }
   ]
 }
