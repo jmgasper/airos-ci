@@ -30,7 +30,7 @@
     "base": "R_2_6_4",
     "base_commit": "2691aff4304a6d7e053199c205620136481b9dd1",
     "branch": "airos-R_2_6_4",
-    "commit": "2691aff4304a6d7e053199c205620136481b9dd1",
+    "commit": "a2a4346ad11179c572b3fbead05558f11d3f6a65",
     "repo": "libexpat",
     "upstream": "https://github.com/libexpat/libexpat.git",
     "url": "https://github.com/jmgasper/libexpat.git"
@@ -57,7 +57,7 @@
     "base": "VER-2-13-3",
     "base_commit": "42608f77f20749dd6ddc9e0536788eaad70ea4b5",
     "branch": "airos-VER-2-13-3",
-    "commit": "5a262b81d11e934e0b36c7894c69ae8d9879e00f",
+    "commit": "a3f8304754ce836eebb2923c6a73f97f5e55f053",
     "repo": "freetype",
     "upstream": "https://github.com/freetype/freetype.git",
     "url": "https://github.com/jmgasper/freetype.git"
@@ -147,7 +147,7 @@
     "base": "0.21.5",
     "base_commit": "ba4c49a205408845834b1648ad23c15ee09f722b",
     "branch": "airos-0.21.5",
-    "commit": "cfeb2e005f8623e2df973f22682f698572a9b9d4",
+    "commit": "2e44e6dd2cf1c52ac1e13f1209e8abdf84210503",
     "repo": "libpsl",
     "upstream": "https://github.com/rockdaboot/libpsl.git",
     "url": "https://github.com/jmgasper/libpsl.git"
@@ -165,7 +165,7 @@
     "base": "v2.14.5",
     "base_commit": "74f3154320df8950eceae4951975cc9dfc3a254d",
     "branch": "airos-v2.14.5",
-    "commit": "74f3154320df8950eceae4951975cc9dfc3a254d",
+    "commit": "75eaf025138dc1cfc1c23b446a53c66bf2f39865",
     "repo": "libxml2",
     "upstream": "https://github.com/GNOME/libxml2.git",
     "url": "https://github.com/jmgasper/libxml2.git"
@@ -174,7 +174,7 @@
     "base": "v1.1.43",
     "base_commit": "71be7a32637760d769b193d95e0c745ecb86b679",
     "branch": "airos-v1.1.43",
-    "commit": "71be7a32637760d769b193d95e0c745ecb86b679",
+    "commit": "0311bde957f6ded09b5d13ab353008bf92fcc970",
     "repo": "libxslt",
     "upstream": "https://github.com/GNOME/libxslt.git",
     "url": "https://github.com/jmgasper/libxslt.git"
@@ -192,7 +192,7 @@
     "base": null,
     "base_commit": null,
     "branch": "airos-25.3.6",
-    "commit": "8d7f976ea85e8fa144e101a4d52f87726945f7df",
+    "commit": "fa0964a05f6cf0616657e74be836c2687b4fe1c0",
     "repo": "mesa",
     "upstream": null,
     "url": "https://github.com/jmgasper/mesa.git"

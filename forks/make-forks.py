@@ -127,9 +127,11 @@ def apply_patch(repo, data, message, origin):
         os.unlink(name)
 
 
-def commit(repo, message, origin):
+def commit(repo, message, origin, everything=False):
     # --sparse: a sparse fork (WebKit) still records every file a patch made.
-    run(["git", "add", "-A", "--sparse"], cwd=repo)
+    # A release tarball goes in whole (-f): its generated files (configure,
+    # Makefile.in) are what the projects' .gitignore leaves out.
+    run(["git", "add", "-A", "--sparse", *(["-f"] if everything else [])], cwd=repo)
     if run(["git", "diff", "--cached", "--quiet"], cwd=repo, check=False) == 0:
         print(f"  (no changes from {origin})", file=sys.stderr)
         return
@@ -324,7 +326,7 @@ def make(c, sources, workdir, lock, force):
         if "tarball" in p:
             path = fetch_tarball(p["tarball"], p["sha256"], cache)
             unpack_into(d, path, p.get("into", "."), p.get("strip", 0), p.get("pick"))
-            commit(d, p["message"], f"{p['tarball']} (sha256 {p['sha256']})")
+            commit(d, p["message"], f"{p['tarball']} (sha256 {p['sha256']})", everything=True)
         elif "git" in p:
             # files from a pinned commit of another git repository (sparse,
             # blobs only for the matching paths), at the same paths
