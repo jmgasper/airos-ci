@@ -360,6 +360,56 @@
       "used_by": "arm64 images: libEGL_mesa (Panfrost on the ROCK 5, V3D on the Pi) and libvulkan_broadcom (deps/recipes/gl.sh)"
     },
     {
+      "name": "mesa-x86_64",
+      "repo": "mesa",
+      "wave": 3,
+      "create": "import",
+      "description": "Mesa 3D for x86_64 (the engine's private EGL in summit_webkit): the 25.3.6 release tarball with Summit's Haiku x86_64 changes (EGL on Haiku, llvmpipe and zink) as Summit's tools/mesa-vm builds it",
+      "branch": "airos-25.3.6-x86_64",
+      "patches": [
+        {
+          "tarball": "https://archive.mesa3d.org/mesa-25.3.6.tar.xz",
+          "sha256": "59217efeac3b64e7ced958324b9db7494f1e0741aeb22d780276514cc1b8f206",
+          "strip": 1,
+          "into": ".",
+          "message": "Import Mesa 25.3.6 (mesa-25.3.6.tar.xz)"
+        },
+        {
+          "from": "summit:tools/mesa-vm/mesa-25.3.6-haiku-x86_64.patch",
+          "message": "Haiku x86_64: EGL platform and HaikuPorts changes (Summit's mesa-25.3.6-haiku-x86_64.patch)"
+        },
+        {
+          "from": "summit:tools/mesa-vm/mesa-25.3.6-summit-01-quiet-egl-haiku.patch",
+          "message": "EGL Haiku: quiet (Summit)"
+        },
+        {
+          "from": "summit:tools/mesa-vm/mesa-25.3.6-summit-02-haiku-egl-zink.patch",
+          "message": "EGL Haiku: zink (Summit)"
+        },
+        {
+          "from": "summit:tools/mesa-vm/mesa-25.3.6-summit-03-zink-missing-library.patch",
+          "message": "zink: a missing Vulkan library is not fatal (Summit)"
+        },
+        {
+          "from": "summit:tools/mesa-vm/mesa-25.3.6-summit-04-zink-failed-screen.patch",
+          "message": "zink: failed screen creation (Summit)"
+        },
+        {
+          "from": "summit:tools/mesa-vm/mesa-25.3.6-summit-05-frame-copies.patch",
+          "message": "EGL Haiku: fewer frame copies (Summit)"
+        },
+        {
+          "from": "summit:tools/mesa-vm/mesa-25.3.6-summit-06-present-into-screen.patch",
+          "message": "EGL Haiku: present into the screen (Summit)"
+        },
+        {
+          "from": "ci:forks/patches/mesa-hgl-format-dep.patch",
+          "message": "hgl: depend on the generated format header (parallel build race)"
+        }
+      ],
+      "used_by": "x86_64 summit_webkit: the private Mesa (llvmpipe, zink) with EGL in lib/summit-webkit/mesa (deps/build-gl-x86_64.sh)"
+    },
+    {
       "name": "libglvnd",
       "wave": 3,
       "create": "fork",
