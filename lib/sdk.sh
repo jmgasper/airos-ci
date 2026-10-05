@@ -15,5 +15,6 @@ if [[ ${AIROS_LOCKED:-} != haiku-$ARCH ]]; then
 	flock -s "$AIROS_SDK_LOCK_FD"
 fi
 . "$AIROS_SDK/$ARCH/env.sh"
-DEPS=${DEPS:-$AIROS_SDK/$ARCH/deps/boot/system}
+# Outside the SDK directory, which build-sdk.sh replaces wholesale.
+DEPS=${DEPS:-$AIROS_ROOT/deps/$ARCH/boot/system}
 mkdir -p "$DEPS" "$AIROS_WORK"

@@ -9,7 +9,7 @@
 #   2. build it and install into a stage with the Haiku layout: libraries in
 #      lib/, headers in develop/headers/, static libraries, the libX.so links
 #      and pkg-config files in develop/lib/;
-#   3. merge the stage into $AIROS_SDK/ARCH/deps/boot/system (DEPS), which app
+#   3. merge the stage into $AIROS_ROOT/deps/ARCH/boot/system (DEPS), which app
 #      builds and later recipes compile against;
 #   4. package it as airos_<name>-<version>-ARCH.hpkg into the package pool
 #      ($AIROS_PACKAGES/ARCH), from which the images install it.
@@ -166,7 +166,7 @@ build_recipe() {
 	FORK=$NAME
 	. "$recipe"
 	local dir=$WORKDIR/$NAME stamp
-	stamp="$(fork_info "$FORK" commit 2>/dev/null || echo none) $(sha256sum "$recipe" | cut -c1-16) $(cat "$AIROS_SDK/$ARCH/revision") ${STAMP_EXTRA:-}"
+	stamp="$(fork_info "$FORK" commit 2>/dev/null || echo none) $(sha256sum "$recipe" | cut -c1-16) ${STAMP_EXTRA:-}"
 	if [[ ${FORCE:-0} != 1 && -f $dir/stamp && $(cat "$dir/stamp") == "$stamp" ]]; then
 		echo "== $NAME (up to date)"
 		return
