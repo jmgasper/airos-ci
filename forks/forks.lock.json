@@ -26,6 +26,15 @@
     "upstream": "https://github.com/ScintillaOrg/lexilla.git",
     "url": "https://github.com/jmgasper/lexilla.git"
   },
+  "mpp": {
+    "base": "14729dd578e570e5f00fd1dd2113f5429012d64b",
+    "base_commit": "14729dd578e570e5f00fd1dd2113f5429012d64b",
+    "branch": "airos-14729dd",
+    "commit": "4ad48e271ce2f406ba652d16d252a6f9ac985240",
+    "repo": "mpp",
+    "upstream": "https://github.com/rockchip-linux/mpp.git",
+    "url": "https://github.com/jmgasper/mpp.git"
+  },
   "nghttp2": {
     "base": "v1.64.0",
     "base_commit": "526ff38e0249acbcc4d0e8958c12cdeae9960cfe",

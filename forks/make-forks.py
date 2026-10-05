@@ -209,6 +209,8 @@ def make(c, sources, workdir, lock, force):
         line = run(["git", "ls-tree", parent["base_commit"], base["path"]], cwd=pdir, capture=True)
         base_rev = line.split()[2]
         fetch_ref = base_rev
+    elif base and re.fullmatch(r"[0-9a-f]{40}", base):
+        base_rev, fetch_ref = base, base
     elif base:
         base_rev, fetch_ref = base, f"refs/tags/{base}:refs/tags/{base}"
     else:
@@ -238,6 +240,18 @@ def make(c, sources, workdir, lock, force):
             path = fetch_tarball(p["tarball"], p["sha256"], cache)
             unpack_into(d, path, p.get("into", "."), p.get("strip", 0), p.get("pick"))
             commit(d, p["message"], f"{p['tarball']} (sha256 {p['sha256']})")
+        elif "overlay" in p:
+            # copy a directory tree from a pinned source repository into the fork
+            src_name, path = p["overlay"].split(":", 1)
+            src = sources.path(src_name)
+            dest = os.path.join(d, p["into"])
+            os.makedirs(dest, exist_ok=True)
+            archive = subprocess.run(["git", "-C", src, "archive", sources.spec[src_name]["ref"], path],
+                                     check=True, stdout=subprocess.PIPE).stdout
+            with tempfile.TemporaryDirectory() as tmp:
+                subprocess.run(["tar", "-x", "-C", tmp], input=archive, check=True)
+                shutil.copytree(os.path.join(tmp, path), dest, dirs_exist_ok=True)
+            commit(d, p["message"], sources.describe(p["overlay"]))
         elif "add" in p:
             target = os.path.join(d, p["add"])
             os.makedirs(os.path.dirname(target), exist_ok=True)

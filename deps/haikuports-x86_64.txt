@@ -1,0 +1,14 @@
+# HaikuPorts packages the x86_64 app builds compile against (staged into the
+# x86_64 SDK's DEPS by the haikuports recipe; their runtime dependencies are
+# resolved automatically). arm64 has no HaikuPorts desktop repository: the same
+# libraries are built from the jmgasper forks there (deps/recipes/).
+curl_devel
+sqlite_devel
+taglib2_devel
+libpcre2_devel
+scintilla_devel
+lexilla_devel
+openssl3_devel
+ffmpeg6_devel
+lzo_devel
+lz4_devel

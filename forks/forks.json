@@ -211,6 +211,26 @@
         }
       ],
       "used_by": "Burrow (burrow-openvpn, both architectures)"
+    },
+    {
+      "name": "mpp",
+      "wave": 2,
+      "create": "fork",
+      "github": "rockchip-linux/mpp",
+      "base": "14729dd578e570e5f00fd1dd2113f5429012d64b",
+      "branch": "airos-14729dd",
+      "patches": [
+        {
+          "from": "haiku:tools/rock5-itx/mpp/mpp-14729dd-haiku.patchset",
+          "message": "Haiku port of the Rockchip MPP library"
+        },
+        {
+          "overlay": "haiku:tools/rock5-itx/mpp/compat",
+          "into": "haiku/compat",
+          "message": "Haiku compatibility headers (asm/ioctl.h, linux/*) the build includes"
+        }
+      ],
+      "used_by": "arm64: rock5_ffmpeg (RK3588 VPU decoding through the MPP decoder add-on)"
     }
   ]
 }

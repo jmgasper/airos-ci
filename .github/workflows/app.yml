@@ -37,6 +37,11 @@ on:
         required: false
         type: string
         default: x86_64 arm64
+      publish-branch:
+        description: branch whose builds are published (default the repository's default branch)
+        required: false
+        type: string
+        default: ''
       airos-ci-ref:
         description: airos-ci revision with the build scripts
         required: false
@@ -90,7 +95,7 @@ jobs:
           retention-days: 14
 
       - name: Publish release and README links
-        if: github.ref_name == github.event.repository.default_branch
+        if: github.ref_name == (inputs.publish-branch != '' && inputs.publish-branch || github.event.repository.default_branch)
         env:
           GH_TOKEN: ${{ github.token }}
         run: |

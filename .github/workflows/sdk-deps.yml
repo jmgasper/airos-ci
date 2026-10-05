@@ -1,0 +1,56 @@
+# Cross SDKs (Haiku built from jmgasper/haiku master) and third-party
+# dependencies (arm64: built from the jmgasper forks; x86_64: HaikuPorts) on the
+# air/OS build server. Runs when the build scripts, recipes or fork pins
+# change, and on demand. The image pipeline in jmgasper/haiku rebuilds the
+# SDKs itself whenever master moves.
+name: SDK and dependencies
+
+on:
+  push:
+    branches: [main]
+    paths: ['sdk/**', 'deps/**', 'lib/**', 'forks/forks.lock.json', '.github/workflows/sdk-deps.yml']
+  workflow_dispatch:
+    inputs:
+      force:
+        description: rebuild every dependency even if unchanged
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: airos-sdk-deps
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: [self-hosted, airos-build]
+    timeout-minutes: 300
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: SDKs
+        run: |
+          for arch in x86_64 arm64; do
+            echo "::group::SDK $arch"
+            sdk/build-sdk.sh "$arch"
+            echo "::endgroup::"
+          done
+
+      - name: Dependencies
+        env:
+          FORCE: ${{ inputs.force && '1' || '0' }}
+        run: |
+          for arch in x86_64 arm64; do
+            echo "::group::dependencies $arch"
+            deps/build-deps.sh "$arch"
+            echo "::endgroup::"
+          done
+          {
+            echo "## Package pool"
+            for arch in x86_64 arm64; do
+              echo "### $arch ($(cat /data1/airos/sdk/$arch/revision))"
+              ls /data2/airos/packages/$arch | sed 's/^/- /'
+            done
+          } >> "$GITHUB_STEP_SUMMARY"

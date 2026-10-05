@@ -1,79 +1,53 @@
 #!/usr/bin/env bash
-# build-arm64-app-packages.sh - cross-build the owner's applications into
-# arm64 Haiku packages (.hpkg) for the air/OS image of the ROCK 5 ITX.
+# build-app-packages.sh - cross-build the owner's applications into Haiku
+# packages (.hpkg) for air/OS, for x86_64 or arm64 (AIROS_ARCH).
 #
 # Usage:
-#   tools/airos/build-arm64-app-packages.sh [OUTPUT_DIR] [APP ...]
+#   AIROS_ARCH=x86_64|arm64 APPS=DIR apps/build-app-packages.sh [OUTPUT_DIR] [APP ...]
 #
-#   OUTPUT_DIR  where the packages go (default /mnt/HaikuWork/airos/packages-arm64)
-#   APP         any of: airshot clipper burrow kiri lcdmonitor amp turbochook natter
-#               summit_webkit summit airpins
-#               (default: all of them but airpins, natter last; AirPins is the
-#               Raspberry Pi 4 image's GPIO tool and is built only when named)
+#   OUTPUT_DIR  where the packages go (default $AIROS_PACKAGES/ARCH)
+#   APP         any of: airshot clipper burrow kiri lcdmonitor amp turbochook
+#               natter airtime airpins (default: all but airpins)
+#   APPS        a directory with the application repositories under the names
+#               airShot clipper burrow kiri lcdmonitor tasamp turbochook natter
+#               airTime airpins (CI jobs link their checkout there)
 #
-# Environment overrides (all optional):
-#   JOBS=8                       parallel compile jobs
-#   APPS=/mnt/HaikuWork/apps     where the application repositories live
-#   APPBUILD=/mnt/HaikuWork/airos/appbuild
-#                                work tree: snapshots, objects, staging
-#   SYSROOT=...                  arm64 Haiku sysroot (default: Summit's arm64
-#                                sysroot, the most complete one: libmedia, libgame,
-#                                private headers, libshared.a)
-#   EXTRA_DEPS=...               cross-built TagLib 2, SQLite, PCRE2, Scintilla,
-#                                Lexilla (same binaries as rock5-image-extras/lib)
-#   TLS_DEPS=...                 Summit's arm64 deps: curl 8.10.1 built with
-#                                OpenSSL 3.3.2 and nghttp2, the SOCK_NONBLOCK and
-#                                armcap SIGBUS fixes; libcurl/libssl/libcrypto
-#                                come from here because the bootstrap libcurl in
-#                                rock5-image-extras has no TLS at all
-#   NATTER_WEB_SIGNIN=auto|1|0   Natter's "Sign in with Slack's web page" needs
-#                                Summit's WebKit engine. auto (default): use it
-#                                when SUMMIT_ENGINE_LOG ends with "ninja exit 0";
-#                                1: require it; 0: build without it
-#   SUMMIT_ENGINE=...            engine build dir with lib/libWebKit.so
-#   SUMMIT_ENGINE_LOG=...        its ninja log
-#   SUMMIT_WEBKIT_SRC=...        Source/WebKit of the engine tree (API headers)
-#   SUMMIT_ENGINE_EXTRA_DEPS=... a second dependency prefix, for an engine built
-#                                with GL compositing and WebGL (see
-#                                tools/rpi4/summit/build-gl-deps.sh)
+# It uses the air/OS cross SDK of that architecture (sdk/build-sdk.sh: cross
+# compiler, sysroot, host rc/xres/resattr/mimeset/package, MIME DB) and the
+# third-party prefix DEPS (deps/: arm64 libraries built from the jmgasper
+# forks, x86_64 HaikuPorts packages). Optional environment:
+#   JOBS                  parallel compile jobs
+#   APPBUILD              work tree: snapshots, objects, staging
+#   NATTER_WEB_SIGNIN     auto|1|0: link Natter against the Summit engine
+#                         (summit_webkit staged into DEPS) for Slack web sign-in
 #
 # For every application this:
 #   1. snapshots the working tree of the repository (tracked files plus
-#      untracked, non-ignored ones: what `git status` calls the current source)
-#      into $APPBUILD/<app>/src. Nothing is ever written into the repositories,
-#      and other people may keep editing them while this runs;
-#   2. cross-compiles it with the arm64 cross compiler. The sysroot goes on
-#      CXX itself, because the Makefiles link with $(CXX) and no flags. rc and
-#      xres are the host builds; mimeset in the Makefiles is skipped;
+#      untracked, non-ignored ones) into $APPBUILD/<app>/src; nothing is ever
+#      written into the repositories;
+#   2. cross-compiles it. The sysroot goes on CXX itself, because the
+#      Makefiles link with $(CXX) and no flags. rc and xres are the host builds;
+#      mimeset in the Makefiles is skipped;
 #   3. stages the package exactly as the app's own tools/package-haiku.sh does
-#      (documentation, licences, data files, post-install scripts with mode
-#      755, the data/deskbar/menu/Applications symlink), then strips, puts the
-#      resources back with xres (GNU strip drops them), copies them into
-#      attributes with `resattr -O` (Tracker and Deskbar read the icon and
-#      signature from attributes) and runs the host mimeset --all with a
-#      staged data/mime_db, as the native scripts do;
-#   4. retargets .PackageInfo to arm64 and cuts `requires` down to
-#      `haiku >= r1~beta6` (Natter keeps summit_webkit when it links the
-#      engine). The board has no repository for lib:/cmd: providers and an
-#      unresolvable package is deactivated at boot; the libraries go to
-#      system/non-packaged/lib instead. Every dropped requirement is printed;
-#   5. creates <name>-<version>-arm64.hpkg in OUTPUT_DIR (older versions of
-#      the same package there are removed), checks it with `package list`
-#      and prints the non-base shared libraries the binaries need with the
-#      exact file each was linked against.
+#      (documentation, licences, data files, post-install scripts, the
+#      data/deskbar/menu/Applications symlink), strips, puts the resources back
+#      with xres (GNU strip drops them), copies them into attributes with
+#      `resattr -O` and runs the host mimeset --all with a staged data/mime_db;
+#   4. retargets .PackageInfo to ARCH. x86_64 keeps its requires (HaikuPorts
+#      provides them); arm64 cuts them down to `haiku >= r1~beta6`, because
+#      arm64 has no repository for lib:/cmd: providers and an unresolvable
+#      package is deactivated at boot (the images ship the libraries);
+#   5. creates <name>-<version>-ARCH.hpkg in OUTPUT_DIR (older versions of the
+#      same package there are removed), checks it with `package list` and
+#      prints the non-base shared libraries the binaries need.
 #
-# The host tools keep Haiku attributes in $ATTRS keyed by inode number, so a
-# new file can inherit attributes of a deleted one. Staging therefore removes
-# such stale attributes, deletes stages with rm_attrs, and refuses a package
-# with attributes anywhere but on applications and MIME DB entries.
-#
-# Re-running is safe: snapshots and stages are rebuilt, objects are kept and
-# make rebuilds only what changed.
+# Derived from the fork's tools/airos/build-arm64-app-packages.sh.
 set -euo pipefail
-umask 022
+umask 002
 
 . "$(cd "$(dirname "$0")/.." && pwd)/lib/env.sh"
 . "$AIROS_CI/lib/sdk.sh"      # ARCH, CROSS, SYSROOT, TOOLS, MIMEDB, DEPS ... for $AIROS_ARCH
+. "$AIROS_CI/lib/fork.sh"     # fork_checkout: third-party sources at pinned commits
 
 OUT=${1:-$AIROS_PACKAGES/$ARCH}
 [[ $# -gt 0 ]] && shift
@@ -146,7 +120,7 @@ setup_dependency_farm() {
 			sqlite3:libsqlite3.so.0 pcre2-8:libpcre2-8.so.0 scintilla:libscintilla.so \
 			lexilla:liblexilla.so avformat:libavformat.so.60 avcodec:libavcodec.so.60 \
 			avfilter:libavfilter.so.9 avutil:libavutil.so.58 swscale:libswscale.so.7 \
-			swresample:libswresample.so.4; do
+			swresample:libswresample.so.4 lzo2:liblzo2.so.2 lz4:liblz4.so.1; do
 		found=""
 		for dir in "$EXTRA_DEPS/lib" "$EXTRA_DEPS/develop/lib" "$TLS_DEPS/lib"; do
 			[[ -e $dir/${lib#*:} ]] && { found=$dir/${lib#*:}; break; }
@@ -218,6 +192,8 @@ docs() { # docs <package name> <source paths relative to SRC>...
 	shift
 	mkdir -p "$STAGE/documentation/packages/$name"
 	for path in "$@"; do
+		# Optional documents a branch may not have yet are skipped, not fatal.
+		[[ -e $SRC/$path ]] || { echo "note: no $path in this revision" >&2; continue; }
 		mkdir -p "$STAGE/documentation/packages/$name/$(dirname "$path")"
 		cp -R "$SRC/$path" "$STAGE/documentation/packages/$name/$(dirname "$path")/"
 	done
@@ -464,24 +440,88 @@ build_airpins() {
 }
 
 # --- Burrow -----------------------------------------------------------------
-# The repository's own tools/build-arm64.sh builds burrow-openvpn (OpenSSL
-# linked statically, LZO/LZ4 left out) and Burrow; it runs in the snapshot.
+# burrow-openvpn is OpenVPN 2.6.13 with Burrow's patches, from the
+# jmgasper/openvpn fork (branch burrow-2.6.13). arm64: OpenSSL linked
+# statically, LZO/LZ4 left out (AWS Client VPN uses neither), so only Haiku is
+# required. x86_64: linked against the HaikuPorts OpenSSL 3, LZO and LZ4 that
+# Burrow's package requires, as the native build is.
 build_burrow() {
 	note Burrow
 	snapshot burrow burrow
-	JOBS=$JOBS bash "$SRC/tools/build-arm64.sh" >/dev/null
+	local ovpn=$APPBUILD/burrow/openvpn-src
+	fork_checkout openvpn "$ovpn"
+	( cd "$ovpn" && autoreconf -fi >/dev/null 2>&1 )
+	local ssl_libs features=()
+	if [[ $ARCH == arm64 ]]; then
+		ssl_libs="$DEPS/develop/lib/libssl.a $DEPS/develop/lib/libcrypto.a"
+		features=(--disable-lzo --disable-lz4)
+	else
+		ssl_libs="-L$FARM/lib -lssl -lcrypto"
+		# OpenVPN's configure takes explicit LZO/LZ4 flags as "enabled", so
+		# they are only given when the libraries are wanted.
+		features=(--enable-lzo --enable-lz4
+			LZO_CFLAGS="-I$DEPS/develop/headers" LZO_LIBS="-L$FARM/lib -llzo2"
+			LZ4_CFLAGS="-I$DEPS/develop/headers" LZ4_LIBS="-L$FARM/lib -llz4")
+	fi
+	# The host's ifconfig and route must not leak into the paths OpenVPN runs.
+	( cd "$ovpn" && ./configure -q --host="$TRIPLET" --build=x86_64-pc-linux-gnu \
+		CC="$CC_T" CPPFLAGS="-I$FARM/include -I$DEPS/develop/headers" \
+		OPENSSL_CFLAGS="-I$FARM/include" OPENSSL_LIBS="$ssl_libs" \
+		LDFLAGS="-lnetwork -L$DEPS/develop/lib -Wl,-rpath-link,$DEPS/lib" \
+		IFCONFIG=/boot/system/bin/ifconfig ROUTE=/boot/system/bin/route \
+		NETSTAT=/boot/system/bin/netstat IPROUTE=/bin/false \
+		"${features[@]}" --disable-plugins --disable-pkcs11 --disable-debug --disable-unit-tests >/dev/null )
+	make -C "$ovpn" -s -j"$JOBS" >/dev/null
+	cp "$ovpn/src/openvpn/openvpn" "$BUILDDIR/burrow-openvpn"
+
+	make -C "$SRC" -s -j"$JOBS" BUILD=build-$ARCH TARGET_OS=Haiku CXX="$CXX_T" objects
+	( cd "$SRC" && $CXX_T -o "$BUILDDIR/Burrow" "$BUILDDIR"/src/core/*.o "$BUILDDIR"/src/ui/*.o \
+		"$BUILDDIR/src/main.o" -lbe -ltracker -lnetwork -Wl,--export-dynamic )
+	( cd "$SRC" && "$TOOLS/rc/rc" -I resources -o "$BUILDDIR/Burrow.rsrc" resources/Burrow.rdef )
+
 	stage_begin
 	install_binary "$BUILDDIR/Burrow" "$BUILDDIR/Burrow.rsrc" apps/Burrow
 	install_binary "$BUILDDIR/burrow-openvpn" - bin/burrow-openvpn
 	docs burrow README.md LICENSE docs
-	# OpenVPN is GPL 2: ship how burrow-openvpn was made next to the binary.
+	# OpenVPN is GPL 2: say where burrow-openvpn's source is, next to the binary.
 	mkdir -p "$STAGE/documentation/packages/burrow/openvpn"
-	cp -R "$SRC/openvpn/patches" "$SRC/openvpn/build.sh" "$SRC/openvpn/SOURCE.md" \
-		"$SRC/tools/build-arm64.sh" "$STAGE/documentation/packages/burrow/openvpn/"
+	cp -R "$SRC/openvpn/patches" "$SRC/openvpn/SOURCE.md" "$STAGE/documentation/packages/burrow/openvpn/"
+	printf 'burrow-openvpn was built from %s at %s (branch %s): OpenVPN %s with the patches in this directory.\n' \
+		"$(fork_info openvpn url)" "$FORK_COMMIT" "$(fork_info openvpn branch)" "$(fork_info openvpn base)" \
+		> "$STAGE/documentation/packages/burrow/openvpn/SOURCE-air-OS-CI.txt"
 	deskbar_link apps/Burrow Burrow
 	retarget_package_info "$SRC/resources/Burrow.PackageInfo" "$STAGE/.PackageInfo"
 	add_attributes "$BUILDDIR/Burrow.rsrc" apps/Burrow
 	finish_package burrow apps/Burrow bin/burrow-openvpn
+}
+
+# --- airTime -------------------------------------------------------------------
+# The movie player, linked against FFmpeg 6: on arm64 the rock5_ffmpeg build
+# (jmgasper/ffmpeg + MPP), which provides no lib: entries, so the package
+# requires rock5_ffmpeg; on x86_64 HaikuPorts' ffmpeg6.
+build_airtime() {
+	note airTime
+	snapshot airTime airtime
+	local headers=$SYSROOT/boot/system/develop/headers
+	make -C "$SRC" -s -j"$JOBS" BUILD=build-$ARCH CXX="$CXX_T" \
+		HAIKU_HEADERS="$headers" FFMPEG_CFLAGS="-I$FARM/include -I$DEPS/develop/headers" \
+		FFMPEG_LDFLAGS="-L$FARM/lib -Wl,-rpath-link,$DEPS/lib" \
+		RC="$TOOLS/rc/rc" XRES="$TOOLS/xres" MIMESET=true
+	stage_begin
+	install_binary "$BUILDDIR/airTime" "$BUILDDIR/airTime.rsrc" apps/airTime
+	install_file 755 "$SRC/resources/scripts/airtime-register-default.sh" \
+		boot/post-install/airtime-register-default.sh
+	docs airtime README.md LICENSE
+	deskbar_link apps/airTime airTime
+	if [[ $ARCH == arm64 ]]; then
+		awk '/^requires[ \t]*\{/ { print; print "\trock5_ffmpeg >= 6.1.6"; next } { print }' \
+			"$SRC/resources/airTime.PackageInfo" > "$BUILDDIR/airTime.PackageInfo"
+		retarget_package_info "$BUILDDIR/airTime.PackageInfo" "$STAGE/.PackageInfo" '^rock5_ffmpeg'
+	else
+		retarget_package_info "$SRC/resources/airTime.PackageInfo" "$STAGE/.PackageInfo"
+	fi
+	add_attributes "$BUILDDIR/airTime.rsrc" apps/airTime
+	finish_package airtime apps/airTime
 }
 
 # --- Kiri -------------------------------------------------------------------
@@ -576,18 +616,19 @@ build_turbochook() {
 }
 
 # --- Natter ---------------------------------------------------------------------
+# The Summit engine as the summit_webkit package installs it (staged into DEPS
+# by the Summit pipeline): libWebKit in lib/, the public API headers.
 engine_ready() {
-	[[ -f $SUMMIT_ENGINE_LOG ]] && [[ $(tail -n 1 "$SUMMIT_ENGINE_LOG") == "ninja exit 0" ]] \
-		&& [[ -e $SUMMIT_ENGINE/lib/libWebKit.so ]]
+	[[ -e $SUMMIT_ENGINE/lib/libWebKit.so && -d $SUMMIT_WEBKIT_HEADERS ]]
 }
 
 build_natter() {
 	note Natter
 	local web=0
 	case $NATTER_WEB_SIGNIN in
-		1) engine_ready || die "Summit's arm64 engine is not built ($SUMMIT_ENGINE_LOG)"; web=1 ;;
+		1) engine_ready || die "no Summit engine in $SUMMIT_ENGINE (summit_webkit not staged)"; web=1 ;;
 		auto) if engine_ready; then web=1; else
-			echo "warning: Summit's arm64 engine is not finished; Natter is built without web sign-in" >&2
+			echo "note: no Summit engine staged; Natter is built without web sign-in" >&2
 		fi ;;
 		0) ;;
 		*) die "NATTER_WEB_SIGNIN must be auto, 1 or 0" ;;
@@ -623,7 +664,8 @@ EOF
 				UIProcess/API/haiku/WebKitEmbedding.h UIProcess/API/haiku/WebKitExtensionPermission.h \
 				UIProcess/API/haiku/WebKitInfo.h Shared/API/c/WKBase.h \
 				Shared/API/c/WKDeclarationSpecifiers.h Shared/API/c/haiku/WKBaseHaiku.h; do
-			cp "$SUMMIT_WEBKIT_SRC/$header" "$engine/include/WebKit/"
+			cp "$(find "$SUMMIT_WEBKIT_HEADERS" -name "$(basename "$header")" | head -n 1)" \
+				"$engine/include/WebKit/"
 		done
 		ln -s "$SUMMIT_ENGINE/lib" "$engine/lib"
 		args=(-DNATTER_WEBKIT="$engine")
