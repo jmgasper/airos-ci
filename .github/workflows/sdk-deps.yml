@@ -1,5 +1,6 @@
-# Cross SDKs (Haiku built from jmgasper/haiku master) and third-party
-# dependencies (arm64: built from the jmgasper forks; x86_64: HaikuPorts) on the
+# Cross SDKs (Haiku built from jmgasper/haiku master), third-party
+# dependencies (arm64: built from the jmgasper forks; x86_64: HaikuPorts),
+# image firmware and the GL stacks (Mesa and libglvnd from the forks) on the
 # air/OS build server. Runs when the build scripts, recipes or fork pins
 # change, and on demand. The image pipeline in jmgasper/haiku rebuilds the
 # SDKs itself whenever master moves.
@@ -26,7 +27,7 @@ concurrency:
 jobs:
   build:
     runs-on: [self-hosted, airos-build]
-    timeout-minutes: 300
+    timeout-minutes: 360
     steps:
       - uses: actions/checkout@v7
 
@@ -50,6 +51,18 @@ jobs:
           echo "::group::firmware"
           deps/build-firmware.sh
           echo "::endgroup::"
+
+      - name: GL stacks
+        run: |
+          echo "::group::arm64 (Panfrost, V3D)"
+          deps/build-gl.sh
+          echo "::endgroup::"
+          echo "::group::x86_64 (Summit's private Mesa)"
+          deps/build-gl-x86_64.sh
+          echo "::endgroup::"
+
+      - name: Summary
+        run: |
           {
             echo "## Package pool"
             for arch in x86_64 arm64; do

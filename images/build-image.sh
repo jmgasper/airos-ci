@@ -67,9 +67,11 @@ for file in "$pool"/airos_*-"$ARCH".hpkg "$pool"/rock5_*-"$ARCH".hpkg \
 done
 if [[ $ARCH == x86_64 ]]; then
 	# The applications' x86_64 requirements that the build system's HaikuPorts
-	# list lacks (the others come with AddHaikuImageSystemPackages).
+	# list lacks (the others come with AddHaikuImageSystemPackages), and what
+	# summit_webkit's private Mesa needs: LLVM 21 (llvmpipe) and the Vulkan
+	# loader (zink).
 	AIROS_CACHE=$AIROS_CACHE AIROS_SDK=$AIROS_SDK "$AIROS_CI/deps/haikuports.py" fetch --no-deps \
-		x86_64 taglib2 scintilla lexilla lzo lz4 | xargs -r cp -t "$WORK/packages/"
+		x86_64 taglib2 scintilla lexilla lzo lz4 llvm21_libs vulkan | xargs -r cp -t "$WORK/packages/"
 fi
 # GL stack, EGL vendor files, demos and firmware staged by the deps builds.
 gl=$AIROS_ROOT/image-inputs/$TARGET

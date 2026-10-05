@@ -197,6 +197,15 @@
     "upstream": null,
     "url": "https://github.com/jmgasper/mesa.git"
   },
+  "mesa-x86_64": {
+    "base": null,
+    "base_commit": null,
+    "branch": "airos-25.3.6-x86_64",
+    "commit": "33656fb53639a447733ed926a00843db898e28c7",
+    "repo": "mesa",
+    "upstream": null,
+    "url": "https://github.com/jmgasper/mesa.git"
+  },
   "mpp": {
     "base": "14729dd578e570e5f00fd1dd2113f5429012d64b",
     "base_commit": "14729dd578e570e5f00fd1dd2113f5429012d64b",

@@ -11,13 +11,21 @@ fork_info() {
 
 # fork_checkout NAME DEST: DEST becomes a clean tree of the pinned commit
 # (with submodules, which point at jmgasper forks too). The clone is cached in
-# $AIROS_CACHE/forks and shared by all jobs; the checkout is a worktree.
+# $AIROS_CACHE/forks and shared by all jobs; the checkout is a worktree, kept
+# as it is when it already has that commit and no changes.
 fork_checkout() {
 	local name=$1 dest=$2 url commit cache
 	url=$(fork_info "$name" url)
 	commit=$(fork_info "$name" commit)
 	cache=$AIROS_CACHE/forks/$(fork_info "$name" repo).git
 	mkdir -p "$AIROS_CACHE/forks"
+	# An unchanged checkout is kept (incremental builds keep their times).
+	if [[ -e $dest/.git && $(git -C "$dest" rev-parse HEAD 2>/dev/null) == "$commit" \
+			&& -z $(git -C "$dest" status --porcelain --untracked-files=no 2>/dev/null) ]]; then
+		FORK_COMMIT=$commit
+		echo "$name: $(fork_info "$name" repo)@$(fork_info "$name" branch) ${commit:0:12} (unchanged)"
+		return
+	fi
 	with_lock "fork-$name" bash -c '
 		set -e
 		[[ -d $1 ]] || git clone -q --bare --filter=blob:none "$2" "$1"

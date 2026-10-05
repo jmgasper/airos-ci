@@ -6,7 +6,8 @@
 # ($AIROS_PACKAGES/ARCH), from which the image builds take it.
 #
 #   APP       build-app-packages.sh name: amp airtime airshot burrow clipper
-#             kiri natter turbochook lcdmonitor airpins
+#             kiri natter turbochook lcdmonitor airpins, or several with commas
+#             (summit_webkit,summit)
 #   REPO_DIR  the directory name build-app-packages.sh knows the repository by
 #             (tasamp for Amp, airTime, airShot, turbochook, ...)
 #
@@ -29,8 +30,9 @@ ln -s "$SOURCE" "$apps/$REPO_DIR"
 
 # One build tree per repository and architecture, kept between runs so make
 # only rebuilds what changed.
-AIROS_ARCH=$ARCH APPS=$apps APPBUILD=$AIROS_WORK/appbuild-$ARCH/$APP \
-	"$AIROS_CI/apps/build-app-packages.sh" "$out" "$APP"
+IFS=, read -ra names <<< "$APP"
+AIROS_ARCH=$ARCH APPS=$apps APPBUILD=$AIROS_WORK/appbuild-$ARCH/${APP//,/-} \
+	"$AIROS_CI/apps/build-app-packages.sh" "$out" "${names[@]}"
 
 shopt -s nullglob
 packages=("$out"/*-"$ARCH".hpkg)

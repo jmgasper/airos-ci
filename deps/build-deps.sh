@@ -181,7 +181,13 @@ build_recipe() {
 	fi
 	rm -rf "$STAGE"
 	mkdir -p "$STAGE"
-	( cd "$SRC" && build ) > "$dir/build.log" 2>&1 || { tail -40 "$dir/build.log"; die "$NAME failed (log: $dir/build.log)"; }
+	# Not "( ... ) || die": bash ignores set -e inside a subshell that is
+	# the left side of ||, and a failing step would go unnoticed.
+	set +e
+	( set -e; cd "$SRC"; build ) > "$dir/build.log" 2>&1
+	local status=$?
+	set -e
+	[[ $status == 0 ]] || { tail -40 "$dir/build.log"; die "$NAME failed (log: $dir/build.log)"; }
 	normalize_stage
 	# Package contents can be read-only (HaikuPorts): keep both trees writable
 	# so the next build can replace them.

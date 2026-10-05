@@ -1,0 +1,91 @@
+# Reusable workflow: the Summit pipeline (summit/build-summit.sh) on the
+# self-hosted air/OS build server: Summit's libraries from the jmgasper forks,
+# the WebKit engine with Summit's Haiku port (incremental; the first build
+# takes hours), and the summit_webkit and summit packages, which go into the
+# air/OS package pool for the images. On the default branch the packages are
+# published (rolling "latest" release) and the README's build links updated.
+#
+# Called from jmgasper/summit:
+#
+#   on:
+#     push:
+#       branches: [main]
+#     workflow_dispatch:
+#   jobs:
+#     airos:
+#       uses: jmgasper/airos-ci/.github/workflows/summit.yml@main
+#       permissions:
+#         contents: write
+name: Summit build
+
+on:
+  workflow_call:
+    inputs:
+      architectures:
+        description: space-separated list of architectures to build
+        required: false
+        type: string
+        default: arm64
+      publish-branch:
+        description: branch whose builds are published (default the repository's default branch)
+        required: false
+        type: string
+        default: ''
+      airos-ci-ref:
+        description: airos-ci revision with the build scripts
+        required: false
+        type: string
+        default: main
+
+permissions:
+  contents: write
+
+# One build at a time; a newer push replaces a queued one.
+concurrency:
+  group: airos-summit-${{ github.repository }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: [self-hosted, airos-build]
+    timeout-minutes: 720
+    steps:
+      - name: Check out ${{ github.repository }}
+        uses: actions/checkout@v7
+
+      - name: Fetch airos-ci
+        run: |
+          rm -rf "$RUNNER_TEMP/airos-ci"
+          git clone -q --depth 1 --branch "${{ inputs.airos-ci-ref }}" \
+            https://github.com/jmgasper/airos-ci.git "$RUNNER_TEMP/airos-ci"
+          git -C "$RUNNER_TEMP/airos-ci" log --oneline -1
+
+      - name: Build
+        env:
+          OUT_LIST: ${{ runner.temp }}/packages.txt
+        run: |
+          rm -f "$OUT_LIST"
+          for arch in ${{ inputs.architectures }}; do
+            echo "::group::$arch"
+            "$RUNNER_TEMP/airos-ci/summit/build-summit.sh" "$arch" "$GITHUB_WORKSPACE"
+            echo "::endgroup::"
+          done
+          echo "## Packages" >> "$GITHUB_STEP_SUMMARY"
+          while read -r package; do
+            echo "- \`$(basename "$package")\` ($(du -h "$package" | cut -f1))" >> "$GITHUB_STEP_SUMMARY"
+          done < "$OUT_LIST"
+
+      - name: Keep the packages with the run
+        uses: actions/upload-artifact@v7
+        with:
+          name: summit-packages
+          path: ${{ runner.temp }}/out-*/*.hpkg
+          retention-days: 14
+
+      - name: Publish release and README links
+        if: github.ref_name == (inputs.publish-branch != '' && inputs.publish-branch || github.event.repository.default_branch)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mapfile -t packages < "${{ runner.temp }}/packages.txt"
+          "$RUNNER_TEMP/airos-ci/apps/publish.sh" "${packages[@]}"

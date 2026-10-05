@@ -7,7 +7,8 @@
 #
 #   OUTPUT_DIR  where the packages go (default $AIROS_PACKAGES/ARCH)
 #   APP         any of: airshot clipper burrow kiri lcdmonitor amp turbochook
-#               natter airtime airpins (default: all but airpins)
+#               natter airtime airpins summit_webkit summit (default: all but
+#               airpins and Summit's two)
 #   APPS        a directory with the application repositories under the names
 #               airShot clipper burrow kiri lcdmonitor tasamp turbochook natter
 #               airTime airpins (CI jobs link their checkout there)
@@ -711,6 +712,274 @@ INFO"' _ "$work/PackageInfo.template" > "$work/Natter.PackageInfo"
 }
 
 
+# --- Summit and its engine ------------------------------------------------------
+# Built by the Summit pipeline (summit/build-summit.sh) from a Summit checkout
+# in APPS/summit and the engine summit/build-engine.sh built from it, so the
+# browser and the engine always match:
+#   summit_webkit  the engine in /boot/system/lib/summit-webkit (WebProcess and
+#                  NetworkProcess, lib/ with libWebKit, JavaScriptCore and the
+#                  libraries of summit/build-deps.sh), the public headers in
+#                  develop/headers/summit-webkit
+#   summit         the browser, the system's default web browser
+SUMMIT_ENGINE_BUILD=${SUMMIT_ENGINE_BUILD:-$AIROS_BUILD/webkit-$ARCH}
+SUMMIT_LIBS=${SUMMIT_LIBS:-$AIROS_ROOT/summit/$ARCH/deps}
+SUMMIT_WEBKIT_SRC=${SUMMIT_WEBKIT_SRC:-$AIROS_SRC/webkit-$ARCH/Source/WebKit}
+# What the image's GL stack provides (deps/build-gl.sh), as Haiku's own
+# libraries are: not bundled. x86_64 has no system EGL: the package carries
+# a private Mesa (deps/build-gl-x86_64.sh) in mesa/, which the engine points
+# its processes at.
+GL_SYSTEM=$AIROS_ROOT/gl/$ARCH/boot/system
+SUMMIT_MESA=$AIROS_ROOT/gl/$ARCH-mesa
+# Raise to replace a package built from the same Summit commit.
+SUMMIT_REVISION=${SUMMIT_REVISION:-1}
+PATCHELF=${PATCHELF:-patchelf}
+
+# Versions from the Summit commit's time (UTC): 0.1.0~git20261005.1811 for the
+# browser, 1.10.1~git20261005.1811 for the engine (newer than the hand-made
+# 1.10.0 packages).
+summit_versions() {
+	local stamp
+	stamp=$(TZ=UTC git -C "$APPS/summit" log -1 --format=%cd --date=format-local:%Y%m%d.%H%M)
+	SUMMIT_VERSION=0.1.0~git$stamp-$SUMMIT_REVISION
+	SUMMIT_WEBKIT_VERSION=1.10.1~git$stamp-$SUMMIT_REVISION
+}
+
+# set_rpath <ELF file> <new rpath>: Haiku's runtime loader resolves a library's
+# dependencies with that library's own RPATH only, so every library of the
+# engine needs one.
+set_rpath() {
+	"$PATCHELF" --force-rpath --set-rpath "$2" "$1"
+}
+
+# The engine's public API: every header of its Haiku API and the C base
+# headers they include.
+engine_api_headers() {
+	ls "$SUMMIT_WEBKIT_SRC"/UIProcess/API/haiku/*.h
+	echo "$SUMMIT_WEBKIT_SRC/Shared/API/c/WKBase.h" \
+		"$SUMMIT_WEBKIT_SRC/Shared/API/c/WKDeclarationSpecifiers.h" \
+		"$SUMMIT_WEBKIT_SRC/Shared/API/c/haiku/WKBaseHaiku.h"
+}
+
+summit_engine_built() {
+	[[ -e $SUMMIT_ENGINE_BUILD/lib/libWebKit.so.1 && -x $SUMMIT_ENGINE_BUILD/bin/WebProcess \
+		&& -x $SUMMIT_ENGINE_BUILD/bin/NetworkProcess ]]
+}
+
+build_summit_webkit() {
+	note "summit_webkit (Summit's engine)"
+	summit_engine_built || die "no Summit engine in $SUMMIT_ENGINE_BUILD (summit/build-engine.sh)"
+	command -v "$PATCHELF" >/dev/null || die "patchelf is needed"
+	summit_versions
+	local work=$APPBUILD/summit_webkit
+	mkdir -p "$work"
+	STAGE=$work/stage
+	stage_begin
+	local engine=lib/summit-webkit
+	mkdir -p "$STAGE/$engine/lib"
+	local name
+	for name in WebProcess NetworkProcess; do
+		cp "$SUMMIT_ENGINE_BUILD/bin/$name" "$STAGE/$engine/$name"
+		chmod 755 "$STAGE/$engine/$name"
+		"$STRIP" --strip-debug "$STAGE/$engine/$name"
+		set_rpath "$STAGE/$engine/$name" '$ORIGIN/lib'
+	done
+	[[ ! -f $SUMMIT_ENGINE_BUILD/bin/WebProcess.rsrc ]] \
+		|| "$TOOLS/xres" -o "$STAGE/$engine/WebProcess" "$SUMMIT_ENGINE_BUILD/bin/WebProcess.rsrc"
+	# Every library the processes need that Haiku and the GL stack do not
+	# have, transitively, under its soname: libWebKit, JavaScriptCore, ICU 78
+	# and the third-party libraries of the engine.
+	local pending=("$engine/WebProcess" "$engine/NetworkProcess") item needed source
+	local -A seen=()
+	# The engine's libraries find each other, and on x86_64 the private EGL.
+	local lib_rpath='$ORIGIN'
+	[[ ! -d $SUMMIT_MESA/lib ]] || lib_rpath='$ORIGIN:$ORIGIN/../mesa/lib'
+	for name in WebProcess NetworkProcess; do
+		[[ ! -d $SUMMIT_MESA/lib ]] || set_rpath "$STAGE/$engine/$name" '$ORIGIN/lib:$ORIGIN/mesa/lib'
+	done
+	while [[ ${#pending[@]} -gt 0 ]]; do
+		item=${pending[-1]}
+		unset 'pending[-1]'
+		for needed in $(readelf -d "$STAGE/$item" | sed -n 's/.*(NEEDED).*\[\(.*\)\]/\1/p'); do
+			[[ -n ${seen[$needed]:-} ]] && continue
+			seen[$needed]=1
+			[[ -e $SYSROOT/boot/system/lib/$needed || -e $SYSROOT/boot/system/develop/lib/$needed \
+				|| -e $GL_SYSTEM/lib/$needed ]] && continue
+			source=""
+			[[ -e $SUMMIT_ENGINE_BUILD/lib/$needed ]] && source=$SUMMIT_ENGINE_BUILD/lib/$needed
+			[[ -z $source && -e $SUMMIT_LIBS/lib/$needed ]] && source=$SUMMIT_LIBS/lib/$needed
+			if [[ -z $source ]]; then
+				case $needed in
+					libtracker.so|libtranslation.so|libmedia.so|libtextencoding.so) continue ;;
+				esac
+				die "summit_webkit: no $needed"
+			fi
+			cp "$(readlink -f "$source")" "$STAGE/$engine/lib/$needed"
+			chmod 644 "$STAGE/$engine/lib/$needed"
+			"$STRIP" --strip-unneeded "$STAGE/$engine/lib/$needed"
+			set_rpath "$STAGE/$engine/lib/$needed" "$lib_rpath"
+			pending+=("$engine/lib/$needed")
+		done
+	done
+	# The private Mesa (x86_64), with the vendor file the engine passes to
+	# libglvnd; it needs HaikuPorts' LLVM (llvmpipe) and Vulkan loader (zink).
+	local mesa_requires=""
+	if [[ -d $SUMMIT_MESA/lib ]]; then
+		mkdir -p "$STAGE/$engine/mesa/lib" "$STAGE/$engine/mesa/egl_vendor.d"
+		cp -a "$SUMMIT_MESA/lib/." "$STAGE/$engine/mesa/lib/"
+		local lib
+		for lib in "$STAGE/$engine"/mesa/lib/*.so*; do
+			[[ -L $lib ]] || set_rpath "$lib" '$ORIGIN'
+		done
+		printf '{\n    "file_format_version" : "1.0.0",\n    "ICD" : {\n        "library_path" : "/boot/system/%s/mesa/lib/libEGL_mesa.so.0"\n    }\n}\n' \
+			"$engine" > "$STAGE/$engine/mesa/egl_vendor.d/50_mesa.json"
+		cp "$SUMMIT_MESA/gl-sources.txt" "$SUMMIT_MESA/haikuports.json" "$work/" 2>/dev/null || true
+		mesa_requires=$'\tlib:libllvm >= 21\n\tlib:libvulkan >= 1'
+	fi
+	# Fontconfig's configuration, where the engine's Fontconfig looks for it.
+	if [[ -d $SUMMIT_LIBS/etc/fonts ]]; then
+		mkdir -p "$STAGE/$engine/etc"
+		cp -RL "$SUMMIT_LIBS/etc/fonts" "$STAGE/$engine/etc/"
+	fi
+	# libWebKit.so for programs that link the engine (Natter, Summit, Aurora)
+	ln -s libWebKit.so.1 "$STAGE/$engine/lib/libWebKit.so"
+	local header
+	mkdir -p "$STAGE/develop/headers/summit-webkit/WebKit"
+	for header in $(engine_api_headers); do
+		cp "$header" "$STAGE/develop/headers/summit-webkit/WebKit/"
+	done
+	mkdir -p "$STAGE/documentation/packages/summit_webkit"
+	cp "$SUMMIT_ENGINE_BUILD/engine.json" "$STAGE/documentation/packages/summit_webkit/build.json"
+	cp "$SUMMIT_LIBS/forks.json" "$STAGE/documentation/packages/summit_webkit/libraries.json"
+	local base
+	base=$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["webkit"]["base"][:12])' \
+		"$SUMMIT_ENGINE_BUILD/engine.json")
+	cat > "$STAGE/.PackageInfo" <<INFO
+name			summit_webkit
+version			$SUMMIT_WEBKIT_VERSION
+architecture	$ARCH
+summary			"The WebKit engine of the Summit browser"
+description		"The Summit browser's WebKit (libWebKit with its web and network processes, JavaScriptCore, ICU 78 and the libraries they need), installed in /boot/system/lib/summit-webkit, with GL compositing, WebGL and WebRTC. Programs link lib/libWebKit.so.1 from there and include develop/headers/summit-webkit. Built by air/OS CI from WebKit $base (jmgasper/WebKit) with the Haiku port of Summit $(git -C "$APPS/summit" rev-parse --short HEAD)."
+packager		"air/OS CI"
+vendor			"Summit project"
+copyrights {
+	"Apple Inc. and the WebKit contributors"
+	"Summit contributors"
+}
+licenses {
+	"GNU LGPL v2"
+	"GNU LGPL v2.1"
+	"BSD (2-clause)"
+	"BSD (3-clause)"
+	"MIT"
+}
+provides {
+	summit_webkit = ${SUMMIT_WEBKIT_VERSION%-*}
+}
+requires {
+	haiku >= r1~beta6
+$mesa_requires
+}
+INFO
+	DROPPED="(none)"
+	finish_package summit_webkit "$engine/WebProcess" "$engine/NetworkProcess"
+}
+
+build_summit() {
+	note Summit
+	summit_engine_built || die "no Summit engine in $SUMMIT_ENGINE_BUILD (summit/build-engine.sh)"
+	summit_versions
+	snapshot summit summit
+	local work=$APPBUILD/summit
+	# The engine's public headers, as an installed engine has them.
+	rm -rf "$work/engine"
+	mkdir -p "$work/engine/include/WebKit" "$BUILDDIR/obj"
+	local header
+	for header in $(engine_api_headers); do
+		cp "$header" "$work/engine/include/WebKit/"
+	done
+	# The browser's sources: the list its own native build uses.
+	local sources
+	sources=$(python3 - "$SRC/tools/build-modern-browser.py" <<'PY'
+import ast, re, sys
+text = open(sys.argv[1]).read()
+match = re.search(r"\n(\s+)sources = (\['src/main\.cpp'.*?\])\n", text, re.S)
+print(' '.join(ast.literal_eval(match.group(2))))
+PY
+)
+	[[ -n $sources ]] || die "no source list in Summit's tools/build-modern-browser.py"
+	local private=$SYSROOT/boot/system/develop/headers/private
+	local flags=(-std=c++23 -O2 -Wall -Wextra -Wno-multichar -DBUILDING_HAIKU__=1
+		-I"$work/engine/include" -DSUMMIT_MODERN_WEBKIT=1 -I"$SRC/src" -I"$SRC/vendor"
+		-I"$private/netservices" -I"$private" -I"$FARM/include"
+		-I"$FARM/include/scintilla" -I"$FARM/include/lexilla")
+	local source objects=() object
+	for source in $sources; do
+		object=$BUILDDIR/obj/$(echo "${source%.cpp}" | tr / _).o
+		objects+=("$object")
+		[[ -e $object && ! $SRC/$source -nt $object ]] && continue
+		${CROSS}g++ --sysroot="$SYSROOT" "${flags[@]}" -c "$SRC/$source" -o "$object" &
+		while [[ $(jobs -rp | wc -l) -ge $JOBS ]]; do wait -n; done
+	done
+	wait
+	for object in "${objects[@]}"; do [[ -e $object ]] || die "Summit: $object did not compile"; done
+	# As Summit's own build links it: the libraries most symbols are found in
+	# right after libWebKit, and a GNU hash table (the loader settles most
+	# misses by its bloom filter).
+	${CROSS}g++ --sysroot="$SYSROOT" -specs="$UNWIND_SPECS" "${objects[@]}" \
+		-L"$SUMMIT_ENGINE_BUILD/lib" -L"$FARM/lib" \
+		-Wl,-rpath-link,"$SUMMIT_ENGINE_BUILD/lib" -Wl,-rpath-link,"$SUMMIT_LIBS/lib" \
+		-Wl,-rpath-link,"$TLS_DEPS/lib" -Wl,-rpath-link,"$GL_SYSTEM/lib" \
+		-Wl,-rpath-link,"$SYSROOT/boot/system/lib" -Wl,-rpath,"$ENGINE_DIR/lib" \
+		-lWebKit -lJavaScriptCore -lbe -lstdc++ -lroot -lnetwork -lcrypto -lbnetapi \
+		-ltranslation -ltracker -lgame -lscintilla -llexilla -lcurl -lcolumnlistview \
+		-Wl,--hash-style=both -o "$BUILDDIR/Summit"
+	"$TOOLS/rc/rc" -I "$SRC/resources" -o "$BUILDDIR/Summit.rsrc" "$SRC/resources/Summit.rdef"
+
+	stage_begin
+	install_binary "$BUILDDIR/Summit" "$BUILDDIR/Summit.rsrc" apps/Summit
+	install_file 644 "$SRC/resources/start.html" data/Summit/start.html
+	deskbar_link apps/Summit Summit
+	docs summit README.md LICENSE docs vendor/nlohmann/LICENSE.MIT vendor/nlohmann/UPSTREAM.md
+	# The system's web browser: links, web pages and XHTML open in Summit.
+	mkdir -p "$STAGE/boot/post-install"
+	cat > "$STAGE/boot/post-install/summit-default-browser.sh" <<'SH'
+#!/bin/sh
+# air/OS: Summit is the default web browser.
+for type in application/x-vnd.Be.URL.http application/x-vnd.Be.URL.https \
+		text/html application/xhtml+xml; do
+	setmime -set "$type" -preferredAppSig application/x-vnd.Kunanyi-Summit
+done
+SH
+	chmod 755 "$STAGE/boot/post-install/summit-default-browser.sh"
+	cat > "$STAGE/.PackageInfo" <<INFO
+name			summit
+version			$SUMMIT_VERSION
+architecture	$ARCH
+summary			"A native WebKit browser"
+description		"Summit is a WebKit browser for Haiku and air/OS, with tabs, extensions, developer tools and site permissions, and the default web browser of air/OS. Built by air/OS CI from Summit $(git -C "$APPS/summit" rev-parse --short HEAD) against the summit_webkit engine."
+packager		"air/OS CI"
+vendor			"Summit project"
+copyrights {
+	"2026 KunanyiOS contributors"
+	"2013-2025 Niels Lohmann"
+}
+licenses {
+	"MIT"
+}
+provides {
+	summit = ${SUMMIT_VERSION%-*}
+	app:Summit = ${SUMMIT_VERSION%-*}
+}
+requires {
+	haiku >= r1~beta6
+	summit_webkit >= ${SUMMIT_WEBKIT_VERSION%-*}
+}
+INFO
+	DROPPED="(none)"
+	add_attributes "$BUILDDIR/Summit.rsrc" apps/Summit
+	finish_package summit apps/Summit
+}
+
 main() {
 	check_prerequisites
 	mkdir -p "$APPBUILD" "$OUT" "$TMPDIR"
@@ -718,8 +987,10 @@ main() {
 	setup_host_tools
 	setup_dependency_farm
 	local app
-	for app in airshot clipper burrow kiri lcdmonitor amp turbochook natter airtime airpins; do
-		[[ $app == airpins && ${#SELECTED[@]} -eq 0 ]] && continue
+	for app in airshot clipper burrow kiri lcdmonitor amp turbochook natter airtime airpins \
+			summit_webkit summit; do
+		# Only when asked for: Air Pins, and Summit (its engine is a pipeline of its own)
+		[[ $app =~ ^(airpins|summit_webkit|summit)$ && ${#SELECTED[@]} -eq 0 ]] && continue
 		wanted "$app" && "build_$app"
 	done
 	note summary
