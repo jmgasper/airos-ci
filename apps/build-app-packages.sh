@@ -804,12 +804,20 @@ build_summit_webkit() {
 		for needed in $(readelf -d "$STAGE/$item" | sed -n 's/.*(NEEDED).*\[\(.*\)\]/\1/p'); do
 			[[ -n ${seen[$needed]:-} ]] && continue
 			seen[$needed]=1
-			[[ -e $SYSROOT/boot/system/lib/$needed || -e $SYSROOT/boot/system/develop/lib/$needed \
-				|| -e $GL_SYSTEM/lib/$needed ]] && continue
+			# What the engine was built with comes along, even when the system
+			# has a library of that name: the x86_64 SDK has HaikuPorts'
+			# haikuwebkit (an old libJavaScriptCore.so.18), fontconfig, ...
+			# A library the SDK has byte for byte (zlib) stays the system's.
 			source=""
 			[[ -e $SUMMIT_ENGINE_BUILD/lib/$needed ]] && source=$SUMMIT_ENGINE_BUILD/lib/$needed
 			[[ -z $source && -e $SUMMIT_LIBS/lib/$needed ]] && source=$SUMMIT_LIBS/lib/$needed
+			if [[ -n $source && -e $SYSROOT/boot/system/lib/$needed ]] \
+					&& cmp -s "$(readlink -f "$source")" "$(readlink -f "$SYSROOT/boot/system/lib/$needed")"; then
+				continue
+			fi
 			if [[ -z $source ]]; then
+				[[ -e $SYSROOT/boot/system/lib/$needed || -e $SYSROOT/boot/system/develop/lib/$needed \
+					|| -e $GL_SYSTEM/lib/$needed ]] && continue
 				case $needed in
 					libtracker.so|libtranslation.so|libmedia.so|libtextencoding.so) continue ;;
 				esac
