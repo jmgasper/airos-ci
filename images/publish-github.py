@@ -73,7 +73,7 @@ def main():
              f'Haiku source: [{commit[:10]}](https://github.com/jmgasper/haiku/commit/{commit}).\n\n'
              f'Validation: {test}\n\n'
              'Download the compressed image, checksum and package manifest below. '
-             'Check hardware notes at https://airos.works/hardware/ before installing. '
+             'Check hardware notes at https://jmgasper.github.io/airos-website/hardware/ before installing. '
              'These are experimental builds; back up your data first.\n\n'
              f'`{files[0].name}` SHA-256: `{digest}`\n')
     existing = subprocess.run(['gh', 'release', 'view', tag, '--repo', args.repo, '--json', 'isDraft'], capture_output=True, text=True)
