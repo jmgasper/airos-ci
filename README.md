@@ -57,6 +57,13 @@ Each image comes with a `manifest.json` listing every package that went in,
 with its SHA-256, and the Haiku commit. Images are smoke-tested in QEMU:
 x86_64 and arm64 must boot to the desktop; for the Pi, the SD card layout is
 checked. They are served at `http://airos-build.local/images/<target>/latest/`.
+After the smoke test, `images/publish-github.py` verifies the compressed and
+uncompressed image hashes, uploads the image, SHA-256 file and manifest to a
+draft GitHub release, verifies GitHub's asset digests, then publishes it as
+an immutable prerelease in `jmgasper/haiku`. Tags start with
+`image-x86_64-`, `image-arm64-` or `image-rpi4-`. Re-running the publisher
+verifies an existing published release without replacing its assets.
+The public website discovers the newest published release for each target.
 
 Growing the Pi's system volume to fill the SD card is future work:
 [docs/rpi4-sd-auto-resize.md](docs/rpi4-sd-auto-resize.md).
