@@ -68,6 +68,24 @@ The public website discovers the newest published release for each target.
 Growing the Pi's system volume to fill the SD card is future work:
 [docs/rpi4-sd-auto-resize.md](docs/rpi4-sd-auto-resize.md).
 
+## Build dashboard
+
+`http://192.168.1.200/` (also `http://airos-build.local/`) shows:
+- the latest image of each target, with its smoke-test screenshot;
+- buttons that start a new build from the latest master of x86_64,
+  ARM64/EFI, the Raspberry Pi, or all three. Optionally the build is clean,
+  with Haiku compiled from scratch;
+- for every build in progress, whoever started it (the page, CI or a
+  shell): its stage, a progress bar, the time elapsed, an estimate of the
+  time left from the stages of earlier builds of that image, jam's targets,
+  and the log.
+
+`dashboard/server.py` runs as the systemd service `airos-dashboard`, behind
+the nginx that serves the files under `/images/`. `images/build-image.sh`
+and `images/smoke-test.sh` record each build in `/data2/airos/builds`
+(`lib/status.py`). Set it up, or update it, with
+`sudo dashboard/install.sh`.
+
 ## Repository layout
 
 | Path | What |
@@ -84,7 +102,8 @@ Growing the Pi's system volume to fill the SD card is future work:
 | `apps/build-app-packages.sh` | cross-builds the applications, `summit_webkit` and `summit` into Haiku packages |
 | `apps/ci-build-app.sh`, `apps/publish.sh` | the CI step of the app pipelines; the release and README update |
 | `summit/` | the Summit pipeline: engine libraries (`build-deps.sh`), WebKit (`build-engine.sh`), packages (`build-summit.sh`) |
-| `images/` | `build-image.sh TARGET`, `smoke-test.sh TARGET`, the nginx that serves the images |
+| `images/` | `build-image.sh TARGET` (`CLEAN=1`: Haiku from scratch), `smoke-test.sh TARGET`, the nginx that serves the images and the dashboard |
+| `dashboard/` | the build dashboard (`server.py`, `index.html`, `install.sh`) |
 | `forks/` | the third-party sources as jmgasper forks: `forks.json` (what and how), `forks.lock.json` (pinned commits), `make-forks.py`, `patches/` |
 | `runner/register-runner.sh REPO` | adds a self-hosted runner for a repository |
 | `server/provision.sh` | the build server's package setup after an Ubuntu install |

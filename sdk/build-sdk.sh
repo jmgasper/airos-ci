@@ -37,6 +37,7 @@ fi
 
 update_sources() {
 	note "sources: $HAIKU_REPO $REF"
+	build_stage "Haiku sources" "$REF"
 	if [[ ! -d $CLONE/.git ]]; then
 		# Full clone with tags: the hrev tags make the revision (hrevNNNNN-NN).
 		git clone -q "$HAIKU_REPO" "$CLONE"
@@ -95,6 +96,7 @@ configure_build() {
 	if [[ ! -x $CROSS_DIR/bin/$TRIPLET-gcc ]] \
 			|| [[ $(cat "$CROSS_DIR/.buildtools-revision" 2>/dev/null) != "$BUILDTOOLS_PIN" ]]; then
 		note "cross tools $ARCH (buildtools $BUILDTOOLS_PIN)"
+		build_stage "cross tools" "GCC and binutils for $ARCH"
 		with_lock buildtools git -C "$AIROS_SRC/buildtools" checkout -q "$BUILDTOOLS_PIN"
 		rm -rf "$CROSS_DIR"
 		"$WT/configure" --distro-compatibility compatible --no-full-xattr \
@@ -112,6 +114,7 @@ configure_build() {
 
 build_haiku() {
 	note "jam: haiku packages and host tools ($ARCH)"
+	build_stage "Haiku packages" "jam haiku.hpkg haiku_devel.hpkg"
 	cd "$BUILD"
 	jam -q -j"$JOBS" haiku.hpkg haiku_devel.hpkg \
 		'<build>rc' '<build>xres' '<build>mimeset' '<build>resattr' '<build>rm_attrs' \
@@ -121,6 +124,7 @@ build_haiku() {
 
 assemble_sdk() {
 	note "SDK $SDK"
+	build_stage "SDK" "sysroot and host tools"
 	local new=$SDK.new root
 	rm -rf "$new"
 	root=$new/sysroot/boot/system

@@ -13,7 +13,8 @@
 # The image (xz-compressed, with SHA-256 sums and a manifest of everything that
 # went in) is published to $AIROS_ARTIFACTS/images/TARGET/<stamp>/ and
 # $AIROS_ARTIFACTS/images/TARGET/latest, which the build server serves over
-# HTTP.
+# HTTP. The build is recorded for the build dashboard (lib/status.py,
+# $AIROS_DATA/builds); CLEAN=1 builds Haiku from scratch.
 set -euo pipefail
 umask 002
 . "$(cd "$(dirname "$0")/.." && pwd)/lib/env.sh"
@@ -26,10 +27,36 @@ case $TARGET in
 	rpi4)   ARCH=arm64 PROFILE=airos-rpi4 JAM_TARGET=airos-rpi-image IMAGE=airos-rpi4.img ;;
 	*) die "unknown target $TARGET" ;;
 esac
+# The build's record for the build dashboard (lib/status.py): opened before the
+# wait for the lock, unless whoever started the build opened it (BUILD_ID), and
+# the output goes to its log as well.
+# (A record that cannot be written never stops the build.)
+if [[ -z ${BUILD_ID:-} ]]; then
+	BUILD_ID=$(python3 "$AIROS_CI/lib/status.py" begin "$TARGET" --ref "$REF" \
+		${CLEAN:+--clean} 2>/dev/null) || BUILD_ID=
+	export BUILD_ID
+fi
+if [[ -n $BUILD_ID && -z ${BUILD_LOGGING:-} ]]; then
+	export BUILD_LOGGING=1
+	exec > >(tee -a "$AIROS_DATA/builds/$BUILD_ID/log.txt") 2>&1
+	python3 "$AIROS_CI/lib/status.py" set "$BUILD_ID" "pid=$$" || true
+fi
+
 # The whole build holds the architecture's lock: it updates the SDK's worktree
 # and build directory (the Pi build shares the arm64 worktree and compiler).
 if [[ ${AIROS_LOCKED:-} != haiku-$ARCH ]]; then
+	build_stage "waiting for the build server" "another $ARCH build or job holds the $ARCH tree"
 	exec env AIROS_LOCKED=haiku-$ARCH flock "$AIROS_LOCKS/haiku-$ARCH.lock" "$0" "$@"
+fi
+trap 'status=$?; [[ $status == 0 || -z $BUILD_ID ]] \
+	|| python3 "$AIROS_CI/lib/status.py" end "$BUILD_ID" failed "exit=$status"' EXIT
+
+# CLEAN=1: a build from scratch: the Haiku objects of the architecture (and the
+# Pi's) go first, so jam builds everything again (cross tools are kept).
+if [[ ${CLEAN:-0} == 1 ]]; then
+	build_stage "cleaning" "removing the $ARCH build objects"
+	rm -rf "$AIROS_BUILD/haiku-$ARCH/objects" "$AIROS_BUILD/haiku-$ARCH/generated"
+	[[ $TARGET != rpi4 ]] || rm -rf "$AIROS_BUILD/haiku-rpi4/objects" "$AIROS_BUILD/haiku-rpi4/generated"
 fi
 
 # The applications every image carries (Summit is the default browser).
@@ -37,6 +64,7 @@ IMAGE_APPS=(summit summit_webkit amp airtime kiri clipper airshot turbochook bur
 
 # 1. Haiku at REF: the SDK build updates the worktree and the build directory
 #    of the architecture and builds haiku.hpkg and the host tools.
+build_stage "Haiku and the SDK"
 "$AIROS_CI/sdk/build-sdk.sh" "$ARCH" "$REF"
 . "$AIROS_SDK/$ARCH/env.sh"
 
@@ -52,6 +80,7 @@ mkdir -p "$WORK"/{packages,libs,egl,demos,firmware,add-ons}
 
 # 2. The inputs.
 note "inputs"
+build_stage "inputs" "packages, GL stacks, firmware"
 pool=$AIROS_PACKAGES/$ARCH
 any=$AIROS_PACKAGES/any
 missing=()
@@ -121,6 +150,7 @@ fi
 } > UserBuildConfig
 rm -f "$BUILD/$IMAGE"
 note "jam @$PROFILE $JAM_TARGET"
+build_stage "image" "jam @$PROFILE $JAM_TARGET"
 jam -q -j"$JOBS" "@$PROFILE" $JAM_TARGET
 [[ -f $BUILD/$IMAGE ]] || die "jam made no $IMAGE"
 # The SDK's build directory must not keep this UserBuildConfig.
@@ -128,6 +158,7 @@ jam -q -j"$JOBS" "@$PROFILE" $JAM_TARGET
 
 # 5. Publish.
 note "publish"
+build_stage "publish" "xz, checksums, manifest"
 stamp=$(date -u +%Y%m%d-%H%M)-$HAIKU_REVISION
 dest=$AIROS_ARTIFACTS/images/$TARGET/$stamp
 mkdir -p "$dest"
@@ -161,3 +192,5 @@ ln -sfn "$stamp" "$AIROS_ARTIFACTS/images/$TARGET/latest"
 ls -1dt "$AIROS_ARTIFACTS/images/$TARGET"/2* | tail -n +6 | xargs -r rm -rf
 echo "image: $dest/$IMAGE.xz ($(du -h "$dest/$IMAGE.xz" | cut -f1); $((size / 1048576)) MiB uncompressed)"
 echo "IMAGE_DIR=$dest" >> "${GITHUB_OUTPUT:-/dev/null}"
+[[ -z $BUILD_ID ]] || python3 "$AIROS_CI/lib/status.py" end "$BUILD_ID" built "image_dir=$dest" \
+	"haiku=$HAIKU_REVISION" "image=$IMAGE.xz" "stamp=$stamp" || true

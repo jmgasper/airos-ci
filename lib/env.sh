@@ -51,3 +51,10 @@ haiku_triplet() {
 json() {
 	python3 -c 'import json,sys; d=json.load(open(sys.argv[1])); v=eval(sys.argv[2],{"d":d}); print(v if not isinstance(v,(list,dict)) else json.dumps(v))' "$1" "$2"
 }
+
+# build_stage NAME [DETAIL]: the image build being recorded for the build
+# dashboard (BUILD_ID, lib/status.py) has reached a stage; nothing otherwise.
+build_stage() {
+	[[ -n ${BUILD_ID:-} ]] || return 0
+	python3 "$AIROS_CI/lib/status.py" stage "$BUILD_ID" "$@" || true
+}

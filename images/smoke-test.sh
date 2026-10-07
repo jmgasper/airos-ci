@@ -17,8 +17,21 @@ TARGET=${1:?usage: smoke-test.sh x86_64|arm64|rpi4 [image dir]}
 DIR=${2:-$AIROS_ARTIFACTS/images/$TARGET/latest}
 DIR=$(readlink -f "$DIR")
 TIMEOUT=${SMOKE_TIMEOUT:-240}
+# The image build's record (lib/status.py): the smoke test finishes it (the
+# trap below).
+BUILD_ID=${BUILD_ID:-$(python3 "$AIROS_CI/lib/status.py" current "$TARGET" 2>/dev/null || true)}
+if [[ -n $BUILD_ID ]]; then
+	if [[ -z ${BUILD_LOGGING:-} ]]; then
+		exec > >(tee -a "$AIROS_DATA/builds/$BUILD_ID/log.txt") 2>&1
+	fi
+	build_stage "smoke test" "$TARGET in QEMU"
+	python3 "$AIROS_CI/lib/status.py" set "$BUILD_ID" "smoke_pid=$$" || true
+fi
 work=$(mktemp -d "$AIROS_DATA/tmp/smoke-$TARGET-XXXXXX")
-trap 'kill $(jobs -p) 2>/dev/null || true; rm -rf "$work"' EXIT
+trap 'status=$?; kill $(jobs -p) 2>/dev/null || true; rm -rf "$work"
+	[[ -z $BUILD_ID ]] || python3 "$AIROS_CI/lib/status.py" end "$BUILD_ID" \
+		$([[ $status == 0 ]] && echo done || echo failed) \
+		"smoke=$([[ $status == 0 ]] && echo pass || echo fail)"' EXIT
 
 image=$(ls "$DIR"/*.xz | head -n 1)
 xz -dc "$image" > "$work/image"
