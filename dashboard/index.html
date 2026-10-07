@@ -181,6 +181,9 @@ function renderStatus(name, t) {
     <div class="bar ${waiting ? "waiting" : ""}"><div style="width:${pct}%"></div></div>
     <div class="numbers"><span><b>${waiting ? "queued" : pct + "%"}</b></span>${numbers}</div>
     ${b.note ? `<div class="meta">${esc(b.note)}</div>` : ""}
+    ${waiting && (b.blocked_by || []).length ? `<div class="meta">In use by: ${b.blocked_by.map(j =>
+      `${esc(j.what)} (${esc(j.where)})`).join(", ")}${(b.queue || []).length ? ` · also waiting: ${b.queue.map(j =>
+      `${esc(j.what)} (${esc(j.where)})`).join(", ")}` : ""}</div>` : ""}
     <div class="stages">${chips}</div>
     <div><button class="small" data-log="${esc(b.id)}">Show log</button> ${cancel}</div>
   </div>`;

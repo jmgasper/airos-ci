@@ -174,6 +174,51 @@ def jam_progress(log_path):
     return min(done, total), total
 
 
+def lock_users(lock_name):
+    """Who holds a lock and who waits for it: the scripts with the lock file
+    open (the runners and the dashboard run as the same user, so /proc
+    shows them), described for people."""
+    path = os.path.realpath(os.path.join(LOCKS, f"{lock_name}.lock"))
+    holders, waiters = [], []
+    for fd_dir in glob.glob("/proc/[0-9]*/fd"):
+        try:
+            if not any(os.readlink(os.path.join(fd_dir, fd)) == path for fd in os.listdir(fd_dir)):
+                continue
+            pid = int(fd_dir.split("/")[2])
+            argv = open(f"/proc/{pid}/cmdline", "rb").read().split(b"\0")
+            argv = [a.decode(errors="replace") for a in argv if a]
+        except OSError:
+            continue
+        if not argv:
+            continue
+        program = os.path.basename(argv[0])
+        if program == "flock":
+            waiters.append(describe_job(argv[2:], pid))
+        elif any(a.endswith(".sh") for a in argv[:3]):
+            holders.append(describe_job(argv, pid))
+    return holders, waiters
+
+
+def describe_job(argv, pid):
+    command = " ".join(argv)
+    script = next((os.path.basename(a) for a in argv if a.endswith(".sh")), os.path.basename(argv[0]))
+    where = "a shell"
+    m = re.search(r"/runner-work/([^/]+)/", command)
+    if m:
+        where = f"CI of {m.group(1)}"
+    elif "/dashboard/" in command:
+        where = "the dashboard"
+    names = {"build-app-packages.sh": "app packages", "build-sdk.sh": "SDK", "build-deps.sh": "dependencies",
+             "build-image.sh": "image", "build-gl.sh": "arm64 GL stack", "build-gl-x86_64.sh": "x86_64 GL stack",
+             "build-nvidia.sh": "NVIDIA driver", "build-nvk.sh": "NVK", "build-zink.sh": "Zink",
+             "build-firmware.sh": "firmware", "build-summit.sh": "Summit", "ci-build-app.sh": "app packages"}
+    what = names.get(script, script)
+    target = next((a for a in argv if a in TARGETS), None)
+    if target and script == "build-image.sh":
+        what = f"{TARGETS[target]['label']} image"
+    return {"pid": pid, "what": what, "where": where}
+
+
 def describe_build(records, record):
     out = dict(record)
     state = record.get("state")
@@ -186,6 +231,13 @@ def describe_build(records, record):
     out["elapsed"] = ((finished or utcnow()) - started).total_seconds() if started else 0
     start = active_start(record)
     out["active_elapsed"] = ((finished or utcnow()) - start).total_seconds() if start else 0
+    if out["state"] == "waiting":
+        holders, waiters = lock_users(f"haiku-{TARGETS[record['target']]['arch']}")
+        seen = set()
+        out["blocked_by"] = [h for h in holders if not (h["what"], h["where"]) in seen
+                             and not seen.add((h["what"], h["where"]))]
+        out["queue"] = [w for w in waiters if w["what"] != f"{TARGETS[record['target']]['label']} image"
+                        or w["where"] != "the dashboard"]
     if out["state"] in ("waiting", "running", "built"):
         left, typical, from_history = estimate(records, record)
         out["eta_seconds"] = left
