@@ -201,6 +201,10 @@ def lock_users(lock_name):
 
 def describe_job(argv, pid):
     command = " ".join(argv)
+    try:
+        command += " " + os.readlink(f"/proc/{pid}/cwd") + "/"
+    except OSError:
+        pass
     script = next((os.path.basename(a) for a in argv if a.endswith(".sh")), os.path.basename(argv[0]))
     where = "a shell"
     m = re.search(r"/runner-work/([^/]+)/", command)
@@ -236,8 +240,9 @@ def describe_build(records, record):
         seen = set()
         out["blocked_by"] = [h for h in holders if not (h["what"], h["where"]) in seen
                              and not seen.add((h["what"], h["where"]))]
-        out["queue"] = [w for w in waiters if w["what"] != f"{TARGETS[record['target']]['label']} image"
-                        or w["where"] != "the dashboard"]
+        own = f"{TARGETS[record['target']]['label']} image"
+        # (a holding flock has the lock open too: it is the holder, not queued)
+        out["queue"] = [w for w in waiters if (w["what"], w["where"]) not in seen and w["what"] != own]
     if out["state"] in ("waiting", "running", "built"):
         left, typical, from_history = estimate(records, record)
         out["eta_seconds"] = left
