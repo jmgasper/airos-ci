@@ -18,7 +18,9 @@
 #
 # into $AIROS_ROOT/image-inputs/x86_64/add-ons, which the x86_64 image puts in
 # system/non-packaged/add-ons: the boot menu's "Disable user add-ons" turns
-# them off, as on the workstation.
+# them off, as on the workstation. images/build-image.sh x86_64 runs it with
+# every image build, so they match the image's Haiku revision; the sdk-deps
+# workflow runs it too.
 set -euo pipefail
 umask 002
 . "$(cd "$(dirname "$0")/.." && pwd)/lib/env.sh"
@@ -48,6 +50,10 @@ fork_checkout mesa-nvk "$W/mesa-nvk"; NVK_COMMIT=$FORK_COMMIT
 
 OUT=$W/out
 rm -rf "$OUT"
+# CLEAN=1 (a clean image build): the driver's objects and NVKMS's go too.
+if [[ ${CLEAN:-0} == 1 ]]; then
+	rm -rf "$W/work/obj" "$W/work/accelerant-obj" "$W/open-gpu-kernel-modules/src/nvidia-modeset/_out"
+fi
 note "nvidia_rm"
 OGKM_SRC=$W/open-gpu-kernel-modules "$driver" "$HAIKU_BUILD" "$W/work" "$OUT"
 note "nvidia_rm.accelerant"

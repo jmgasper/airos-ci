@@ -14,7 +14,8 @@
 # went in) is published to $AIROS_ARTIFACTS/images/TARGET/<stamp>/ and
 # $AIROS_ARTIFACTS/images/TARGET/latest, which the build server serves over
 # HTTP. The build is recorded for the build dashboard (lib/status.py,
-# $AIROS_DATA/builds); CLEAN=1 builds Haiku from scratch.
+# $AIROS_DATA/builds); CLEAN=1 builds Haiku from scratch. The x86_64 image also
+# rebuilds the NVIDIA driver, accelerant and NVDEC from the same Haiku tree.
 set -euo pipefail
 umask 002
 . "$(cd "$(dirname "$0")/.." && pwd)/lib/env.sh"
@@ -68,6 +69,14 @@ IMAGE_APPS=(summit summit_webkit amp airtime kiri clipper airshot turbochook bur
 build_stage "Haiku and the SDK"
 "$AIROS_CI/sdk/build-sdk.sh" "$ARCH" "$REF"
 . "$AIROS_SDK/$ARCH/env.sh"
+
+# x86_64: the NVIDIA driver, its accelerant and the NVDEC add-on are not built
+# by jam; build them from this same Haiku revision (deps/build-nvidia.sh, under
+# this build's lock; about 20 s when little changed).
+if [[ $TARGET == x86_64 ]]; then
+	build_stage "NVIDIA driver" "nvidia_rm, accelerant, NVDEC"
+	"$AIROS_CI/deps/build-nvidia.sh"
+fi
 
 BUILD=$HAIKU_BUILD
 if [[ $TARGET == rpi4 ]]; then
