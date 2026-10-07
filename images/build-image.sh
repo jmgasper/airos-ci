@@ -115,6 +115,19 @@ if [[ $ARCH == x86_64 ]]; then
 	AIROS_CACHE=$AIROS_CACHE AIROS_SDK=$AIROS_SDK "$AIROS_CI/deps/haikuports.py" fetch --no-deps \
 		x86_64 taglib2 scintilla lexilla lzo lz4 llvm21_libs vulkan \
 		intel_wifi_firmwares ralink_wifi_firmwares realtek_wifi_firmwares | xargs -r cp -t "$WORK/packages/"
+else
+	# curl and Summit use /boot/system/data/ssl/CARootCertificates.pem.
+	# This package is architecture-neutral, but the repository copy may use
+	# zstd, which the arm64 release package readers do not necessarily support.
+	ca_source=$(AIROS_CACHE=$AIROS_CACHE AIROS_SDK=$AIROS_SDK \
+		"$AIROS_CI/deps/haikuports.py" fetch --no-deps x86_64 ca_root_certificates)
+	[[ -f $ca_source && $ca_source == *-any.hpkg ]] \
+		|| die "expected one architecture-neutral CA certificate package"
+	ca_package_tool=$HAIKU_BUILD/objects/linux/x86_64/release/tools/package/package
+	# The architecture-neutral pool may already contain an older bundle.
+	rm -f "$WORK/packages/"ca_root_certificates-*-any.hpkg
+	"$ca_package_tool" recompress -q -z zlib "$ca_source" \
+		"$WORK/packages/$(basename "$ca_source")"
 fi
 # GL stack, EGL vendor files, demos, firmware and add-ons staged by the deps
 # builds.

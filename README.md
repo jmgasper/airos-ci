@@ -34,6 +34,9 @@ successful build of every application.
   `wpa_supplicant`, and the GL stack:
   - ROCK 5: Mesa Panfrost with the Mali CSF firmware;
   - Pi 4: Mesa V3D and V3DV.
+- Every image includes the CA root certificate package for HTTPS. ARM64
+  images stage an architecture-neutral copy using zlib compression so the
+  trust store also works with bootstrap package readers.
 - x86_64: HaikuPorts' packages for what the applications need. The x86_64
   `summit_webkit` carries a private Mesa with EGL (llvmpipe, zink), which
   needs HaikuPorts' LLVM 21 and Vulkan loader.
