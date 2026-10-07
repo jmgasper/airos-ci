@@ -65,7 +65,7 @@ an immutable prerelease in `jmgasper/haiku`. Tags start with
 verifies an existing published release without replacing its assets.
 The public website discovers the newest published release for each target.
 
-Growing the Pi's system volume to fill the SD card is future work:
+First-boot setup can grow the Pi's system volume to fill the SD card:
 [docs/rpi4-sd-auto-resize.md](docs/rpi4-sd-auto-resize.md).
 
 ## Build dashboard
